@@ -1,5 +1,5 @@
 // Camada de dados: planilha do Google Drive (via Google Apps Script) ou modo demonstração
-import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261030-1735";
+import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261030-1745";
 
 export async function criarStore() {
   return APPS_SCRIPT_URL ? planilhaStore() : demoStore();
@@ -44,8 +44,9 @@ function planilhaStore() {
     modo: "planilha",
     onPublico(cb, onErr) { ouvPub.add(cb); onErr && ouvErr.add(onErr); iniciar(); },
     onVendas(cb, onErr) { ouvVen.add(cb); onErr && ouvErr.add(onErr); iniciar(); },
-    vender: (venda) => enviar({ acao: "vender", venda }),
-    cancelar: (mesa) => enviar({ acao: "cancelar", mesa }),
+    entrar: (vendedor, pin) => enviar({ acao: "entrar", vendedor, pin }),
+    vender: (venda, pin) => enviar({ acao: "vender", venda, pin }),
+    cancelar: (mesa, pin) => enviar({ acao: "cancelar", mesa, pin }),
     chegada: (mesas, chegou) => enviar({ acao: "chegada", mesas: [].concat(mesas), chegou }),
   };
 }
@@ -75,6 +76,7 @@ function demoStore() {
       const { mesas: _m, ...base } = v;
       mesas.forEach((mesa) => l.push({ ...base, mesa, criadoEm: new Date().toISOString() })); gravar(l);
     },
+    async entrar(nome, pin) { if (!/^\d{4,6}$/.test(pin)) throw new Error("PIN incorreto."); },
     async cancelar(mesa) { gravar(ler().filter((x) => x.mesa !== mesa)); },
     async chegada(mesas, chegou) {
       const lista = [].concat(mesas);

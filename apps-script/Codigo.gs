@@ -51,6 +51,20 @@ function texto_(s) {
   return /^[=+\-@]/.test(s) ? "'" + s : s;
 }
 
+// PIN de cada vendedor, guardado só como hash SHA-256 de "festa-primavera-2026:" + PIN.
+// Os valores reais ficam APENAS no projeto do Apps Script (nunca no GitHub).
+const PIN_HASH = { /* preenchido no Apps Script */ };
+
+function hash_(txt) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, txt, Utilities.Charset.UTF_8)
+    .map(function (b) { return ('0' + (b & 0xff).toString(16)).slice(-2); }).join('');
+}
+
+function autentica_(nome, pin) {
+  if (!nome || !PIN_HASH[nome] || PIN_HASH[nome] !== hash_('festa-primavera-2026:' + String(pin || '').trim()))
+    throw new Error('PIN incorreto para ' + (nome || 'o vendedor') + '.');
+}
+
 function doGet() {
   return json_({ ok: true, vendas: lerVendas_() });
 }
@@ -63,8 +77,11 @@ function doPost(e) {
     const sh = aba_();
     const vendas = lerVendas_();
 
-    if (d.acao === 'vender') {
+    if (d.acao === 'entrar') {
+      autentica_(d.vendedor, d.pin);
+    } else if (d.acao === 'vender') {
       const v = d.venda || {};
+      autentica_(v.vendedor, d.pin); // a venda só sai no nome de quem tem o PIN
       // Uma venda pode ter várias mesas: grava todas ou nenhuma
       const mesas = (Array.isArray(v.mesas) ? v.mesas : [v.mesa]).map(Number)
         .filter(function (m, i, a) { return a.indexOf(m) === i; });
@@ -96,6 +113,9 @@ function doPost(e) {
       if (!achou) throw new Error('Mesa sem venda registrada.');
     } else if (d.acao === 'cancelar') {
       const mesa = Number(d.mesa);
+      const venda = vendas.filter(function (x) { return x.mesa === mesa; })[0];
+      if (!venda) throw new Error('A mesa ' + mesa + ' não tem venda registrada.');
+      autentica_(venda.vendedor, d.pin); // só quem vendeu pode cancelar
       const col = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
       for (let i = col.length - 1; i >= 1; i--) {
         if (Number(col[i][0]) === mesa) { sh.deleteRow(i + 1); break; }

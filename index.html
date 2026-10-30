@@ -233,6 +233,16 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 /* recepcao-fim */
 /* layout-celular-ini */
 .mapa-card{align-self:start}
+.sessao{border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--bg)}
+.sessao-on{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sessao-on b{flex:1;min-width:0;font-size:14px;overflow-wrap:anywhere}
+.sessao-on b::before{content:"✓ ";color:var(--green-2)}
+.sessao-rot{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:100%}
+.sessao-tit{font-weight:800;font-size:14px;margin-bottom:8px}
+.sessao-campos{display:grid;grid-template-columns:1fr 96px;gap:8px}
+.sessao-campos select{min-width:0}
+#pin{text-align:center;letter-spacing:.3em;font-weight:800}
+.btn-entrar{width:100%;margin-top:8px;background:var(--green);color:#fff;min-height:44px}
 .btn-continuar{width:100%;margin-top:14px;background:var(--green-2);color:#fff;font-size:16px}
 .grupo{display:block;font-size:12px;font-weight:800;color:var(--pink);margin-top:2px}
 @media (min-width:821px){.mapa-card{position:sticky;top:12px}}
@@ -339,7 +349,23 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
               <label><span id="rot-valor">Valor (R$)</span><input name="valor" id="valor" type="number" inputmode="decimal" min="0" step="0.01" required></label>
             </div>
             <div class="dica" id="dica-mesa" aria-live="polite">Toque em uma ou mais mesas no mapa, ou digite os números.</div>
-            <label>Vendedor(a)<select name="vendedor" id="sel-vendedor" required></select></label>
+            <div class="sessao" id="sessao">
+              <div class="sessao-on" id="sessao-on" hidden>
+                <span class="sessao-rot">Vendedor(a)</span>
+                <b id="sessao-nome"></b>
+                <button type="button" class="lnk" id="sair-vend">Trocar</button>
+              </div>
+              <div class="sessao-off" id="sessao-off">
+                <div class="sessao-tit">🔒 Identifique-se para vender</div>
+                <div class="sessao-campos">
+                  <select id="sel-vendedor" aria-label="Vendedor(a)"></select>
+                  <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN do vendedor">
+                </div>
+                <button type="button" class="btn btn-entrar" id="entrar-vend">Entrar</button>
+                <div class="erro" id="erro-sessao" role="alert"></div>
+              </div>
+              <input type="hidden" name="vendedor" id="vendedor">
+            </div>
             <label>Nome do comprador<input name="comprador" autocomplete="off" required maxlength="100" placeholder="Ex.: Ana Paula Souza"></label>
             <label>Nome do aluno<input name="aluno" autocomplete="off" required maxlength="100" placeholder="Ex.: João Pedro Souza"></label>
             <label>Série<select name="serie" id="sel-serie" required></select></label>
@@ -392,8 +418,8 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 <div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Copiar comprovante</button></div>
 
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-1735";
-import { criarStore } from "./store.js?v=20261030-1735";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-1745";
+import { criarStore } from "./store.js?v=20261030-1745";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -433,7 +459,22 @@ $("#seg-pag").innerHTML = PAGAMENTOS.map((p, i) => `<input type="radio" name="pa
 $("#filtro-vend").innerHTML += VENDEDORES.map((v) => `<option>${esc(v)}</option>`).join("");
 $("#filtro-pag").innerHTML += PAGAMENTOS.map((p) => `<option>${p}</option>`).join("");
 if (VALOR_MESA > 0) { const c = $("#valor"); c.type = "text"; c.value = brl(VALOR_MESA); c.readOnly = true; c.tabIndex = -1; }
-try { const v = localStorage.getItem("fp-vendedor"); if (v) $("#sel-vendedor").value = v; } catch {}
+// Sessão do vendedor: nome + PIN conferidos pelo script do Google; guardados só neste aparelho
+let sessao = null;
+try { sessao = JSON.parse(localStorage.getItem("fp-sessao")) || null; } catch {}
+if (sessao && !VENDEDORES.includes(sessao.nome)) sessao = null;
+function mostrarSessao() {
+  $("#sessao-on").hidden = !sessao; $("#sessao-off").hidden = !!sessao;
+  $("#sessao-nome").textContent = sessao ? sessao.nome : "";
+  $("#vendedor").value = sessao ? sessao.nome : "";
+}
+function sairSessao(msg) {
+  sessao = null; try { localStorage.removeItem("fp-sessao"); } catch {}
+  $("#pin").value = ""; $("#sel-vendedor").value = ""; mostrarSessao();
+  if (msg) $("#erro-sessao").textContent = msg;
+}
+mostrarSessao();
+$("#sair-vend").addEventListener("click", () => sairSessao());
 
 // ------------------------------------------------------------ render
 function renderResumo() {
@@ -557,6 +598,20 @@ store.onPublico((l) => { vendidas = l.map(Number); status(true); renderResumo();
 window.addEventListener("offline", () => status(false));
 window.addEventListener("online", () => status(true));
 
+$("#entrar-vend").addEventListener("click", async () => {
+  const nome = $("#sel-vendedor").value, pin = $("#pin").value.trim(), er = $("#erro-sessao"), bt = $("#entrar-vend");
+  er.textContent = "";
+  if (!nome || !pin) { er.textContent = "Escolha seu nome e digite seu PIN."; return; }
+  bt.disabled = true; bt.textContent = "Conferindo…";
+  try {
+    await store.entrar(nome, pin);
+    sessao = { nome, pin }; try { localStorage.setItem("fp-sessao", JSON.stringify(sessao)); } catch {}
+    $("#pin").value = ""; mostrarSessao(); toast(`Olá, ${primeiroNome(nome)}! Vendas serão registradas no seu nome.`);
+  } catch (e) { er.textContent = e.message || "Não foi possível conferir o PIN."; }
+  finally { bt.disabled = false; bt.textContent = "Entrar"; }
+});
+$("#pin").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#entrar-vend").click(); } });
+
 store.onVendas((l) => { vendas = l; renderVendedores(); renderLista(); },
   (e) => toast("Não foi possível carregar as vendas: " + e.message));
 
@@ -620,24 +675,27 @@ $("#form-venda").addEventListener("submit", async (e) => {
     turma: f.get("turma"), pagamento: f.get("pagamento"),
   };
   const faltando = [
-    [!v.mesas.length, "a mesa"], [!(v.valor > 0), "o valor"], [!v.vendedor, "o(a) vendedor(a)"],
+    [!v.mesas.length, "a mesa"], [!(v.valor > 0), "o valor"],
     [!v.comprador, "o nome do comprador"], [!v.aluno, "o nome do aluno"], [!v.serie, "a série"],
     [!v.turma, "a turma"], [!v.pagamento, "a forma de pagamento"],
   ].filter(([x]) => x).map(([, t]) => t);
+  if (!sessao) { erro.textContent = "Identifique-se com seu nome e PIN antes de salvar."; $("#sessao").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
   if (faltando.length) { erro.textContent = "Preencha " + faltando.join(", ") + "."; return; }
   if (lerMesas($("#sel-mesa").value).some((m) => m < 1 || m > TOTAL_MESAS)) { erro.textContent = `As mesas vão de 1 a ${TOTAL_MESAS}.`; return; }
   const ja = v.mesas.filter((m) => vendidas.includes(m));
   if (ja.length) { erro.textContent = `${ja.length > 1 ? "As mesas " + listaMesas(ja) + " já foram vendidas" : "A mesa " + ja[0] + " já foi vendida"}. Escolha outra.`; return; }
   erro.textContent = ""; $("#salvar").disabled = true; $("#salvar").textContent = "Salvando…";
   try {
-    await store.vender(v);
-    try { localStorage.setItem("fp-vendedor", v.vendedor); } catch {}
+    await store.vender(v, sessao.pin);
     ["comprador", "aluno"].forEach((n) => (e.target.elements[n].value = ""));
     e.target.elements.serie.value = "";
     $$("#form-venda input[type=radio]").forEach((r) => (r.checked = false));
     e.target.elements.mesa.value = ""; selecionadas = []; renderResumo();
     toast(v.mesas.length > 1 ? `Mesas ${listaMesas(v.mesas)} vendidas! 🌸` : `Mesa ${v.mesas[0]} vendida! 🌸`, { ...v, total: v.valor * v.mesas.length });
-  } catch (err) { erro.textContent = err.message || "Não foi possível salvar. Verifique a internet."; }
+  } catch (err) {
+    if (/PIN/i.test(err.message || "")) { sairSessao(err.message); erro.textContent = "Entre de novo com o seu PIN."; }
+    else erro.textContent = err.message || "Não foi possível salvar. Verifique a internet.";
+  }
   finally { $("#salvar").textContent = "💾 Salvar venda"; $("#salvar").disabled = vendidas.length >= TOTAL_MESAS; }
 });
 
@@ -666,7 +724,9 @@ $("#lista").addEventListener("click", async (e) => {
       return;
     }
     {
-      try { await store.cancelar(v.mesa); toast(`Venda da mesa ${v.mesa} cancelada.`); }
+      if (!sessao) { toast("Para cancelar, entre com seu nome e PIN na aba Vender mesa."); return; }
+      if (sessao.nome !== v.vendedor) { toast(`Só ${primeiroNome(v.vendedor)} pode cancelar esta venda.`); return; }
+      try { await store.cancelar(v.mesa, sessao.pin); toast(`Venda da mesa ${v.mesa} cancelada.`); }
       catch (err) { toast("Erro ao cancelar: " + err.message); }
     }
   }
