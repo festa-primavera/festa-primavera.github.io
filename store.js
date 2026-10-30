@@ -46,6 +46,7 @@ function planilhaStore() {
     onVendas(cb, onErr) { ouvVen.add(cb); onErr && ouvErr.add(onErr); iniciar(); },
     vender: (venda) => enviar({ acao: "vender", venda }),
     cancelar: (mesa) => enviar({ acao: "cancelar", mesa }),
+    chegada: (mesa, chegou) => enviar({ acao: "chegada", mesa, chegou }),
   };
 }
 
@@ -73,5 +74,8 @@ function demoStore() {
       l.push({ ...v, criadoEm: new Date().toISOString() }); gravar(l);
     },
     async cancelar(mesa) { gravar(ler().filter((x) => x.mesa !== mesa)); },
+    async chegada(mesa, chegou) {
+      gravar(ler().map((x) => x.mesa === mesa ? { ...x, chegada: chegou ? new Date().toISOString() : "" } : x));
+    },
   };
 }

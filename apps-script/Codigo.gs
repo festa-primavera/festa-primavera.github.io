@@ -27,6 +27,7 @@ function lerVendas_() {
         serie: String(r[3]), turma: String(r[4]), pagamento: String(r[5]),
         valor: Number(r[6]) || 0, vendedor: String(r[7]),
         criadoEm: r[8] instanceof Date ? r[8].toISOString() : String(r[8] || ''),
+        chegada: r[9] instanceof Date ? r[9].toISOString() : String(r[9] || ''),
       };
     });
 }
@@ -67,6 +68,16 @@ function doPost(e) {
         throw new Error('Preencha comprador e aluno.');
       sh.appendRow([mesa, texto_(v.comprador), texto_(v.aluno), texto_(v.serie), v.turma,
         v.pagamento, Number(v.valor), texto_(v.vendedor), new Date()]);
+    } else if (d.acao === 'chegada') {
+      // Recepção no dia da festa: marca (ou desmarca) a chegada do comprador
+      const mesa = Number(d.mesa);
+      if (sh.getRange(1, 10).getValue() === '') sh.getRange(1, 10).setValue('Chegada');
+      const col = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
+      let achou = false;
+      for (let i = 1; i < col.length; i++) {
+        if (Number(col[i][0]) === mesa) { sh.getRange(i + 1, 10).setValue(d.chegou ? new Date() : ''); achou = true; break; }
+      }
+      if (!achou) throw new Error('A mesa ' + mesa + ' não tem venda registrada.');
     } else if (d.acao === 'cancelar') {
       const mesa = Number(d.mesa);
       const col = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();

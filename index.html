@@ -198,6 +198,39 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:0 16px 32px}
 .bola{animation:quica .8s cubic-bezier(.5,0,.5,1) infinite alternate}
 @keyframes quica{from{transform:translateY(-34px)}to{transform:translateY(0)}}
 @media (max-width:700px){.cena{height:150px}}/* cena-fim */
+/* recepcao-ini */
+.lista{display:grid;gap:10px}
+@media (min-width:821px){.lista{grid-template-columns:1fr 1fr}}
+.venda{display:grid;grid-template-columns:68px minmax(0,1fr);gap:12px;border:1.5px solid var(--line);border-radius:14px;padding:12px;background:var(--paper)}
+.venda.chegou{border-color:var(--green-2);background:#F3FAF5}
+.vm{display:grid;place-content:center;text-align:center;background:var(--pink-soft);border-radius:12px;color:var(--pink);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.vm b{font-family:Fraunces,Georgia,serif;font-size:32px;line-height:1;letter-spacing:0}
+.venda.chegou .vm{background:var(--leaf);color:var(--green-2)}
+.vi{min-width:0}
+.vi b{display:block;font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+.vi span{display:block;font-size:13px;color:var(--muted);font-weight:600}
+.vbtns{grid-column:1/-1;display:flex}
+.vlinks{grid-column:1/-1;display:flex;gap:4px 14px;flex-wrap:wrap;margin-top:-6px}
+.ok-chegou{background:var(--leaf);border-radius:12px;padding:10px 14px;text-align:center}
+details.mais summary{cursor:pointer;font-weight:800;font-size:14px;color:var(--green-2);padding:4px 0}
+details.mais[open] summary{margin-bottom:8px}
+.mais .filtros-sel{display:flex;gap:8px;flex-wrap:wrap}
+body[data-rota="recepcao"] .cena,body[data-rota="recepcao"] .ipe-wrap{display:none}
+body[data-rota="recepcao"] .hero{padding-bottom:30px}
+@media (max-width:700px){body[data-rota="recepcao"] .sub{display:none}body[data-rota="recepcao"] .hero .escola{display:none}}
+.btn-chegada{background:var(--green-2);color:#fff;flex:1;min-height:46px;font-size:16px}
+.ok-chegou{font-weight:800;color:var(--green-2);flex:1}
+.busca-grande{font-size:18px;min-height:54px;margin-bottom:10px}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filtros select{flex:1;min-width:140px;min-height:42px;padding:8px 12px}
+.seg-sm label{min-height:38px;font-size:14px;padding:0 12px}
+.chegadas{display:grid;gap:6px;font-size:14px;font-weight:700;color:var(--muted);margin-bottom:12px}
+.chegadas b{color:var(--ink)}
+.barra{height:8px;border-radius:99px;background:var(--leaf);overflow:hidden}
+.barra i{display:block;height:100%;width:0;background:var(--green-2);border-radius:99px;transition:width .4s}
+.exportar{margin-top:14px}
+mark{background:var(--sun-soft);color:inherit;border-radius:3px}
+/* recepcao-fim */
 /* layout-celular-ini */
 .mapa-card{align-self:start}
 @media (min-width:821px){.mapa-card{position:sticky;top:12px}}
@@ -211,7 +244,8 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:0 16px 32px}
   .chip{font-size:12px;padding:4px 10px;white-space:nowrap}
   .longo{display:none}.curto{display:inline}
   .nav{margin-top:10px}
-  .nav a{padding:7px 14px;font-size:14px}
+  .nav{gap:2px}
+  .nav a{padding:7px 12px;font-size:14px}
   .cena{height:78px;margin-top:4px}
   .cena svg{width:100%}
   .ipe{display:none}
@@ -237,6 +271,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:0 16px 32px}
     </div>
     <nav class="nav">
       <a href="#vendas" data-rota="vendas">Vender mesa</a>
+      <a href="#recepcao" data-rota="recepcao">Recepção</a>
       <a href="#mesas" data-rota="mesas">Resumo</a>
     </nav>
   </div>
@@ -318,22 +353,34 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:0 16px 32px}
             <div class="vendedores" id="vendedores"></div>
             <div class="totgeral"><span><b data-totgeral>R$ 0,00</b><br><small data-totsplit></small></span></div>
       </div>
+    </div>
+  </section>
 
-      <div class="card">
-        <div class="card-head"><h2>Vendas registradas</h2>
-          <div class="acoes"><button class="btn btn-ghost" id="copiar-excel" type="button">📋 Copiar para o Excel</button><button class="btn btn-ghost" id="csv" type="button">⬇️ Baixar planilha (CSV)</button></div></div>
-        <div class="ferr">
-          <input type="search" id="busca" placeholder="Buscar comprador, aluno ou mesa…">
-          <select id="filtro-vend"><option value="">Todos os vendedores</option></select>
-          <select id="filtro-pag"><option value="">Todas as formas</option></select>
-        </div>
-        <div class="scroll">
-          <table class="tabela">
-            <thead><tr><th>Mesa</th><th>Comprador / Aluno</th><th>Série</th><th>Pagamento</th><th>Vendedor(a)</th><th></th></tr></thead>
-            <tbody id="lista"></tbody>
-          </table>
+  <!-- =============== RECEPÇÃO / VENDAS REGISTRADAS =============== -->
+  <section id="tela-recepcao" class="stack" hidden>
+    <div class="card">
+      <div class="card-head"><h2>Vendas registradas</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
+      <div class="sub">No dia da festa: pergunte o nome, busque e confirme a chegada.</div>
+      <div class="chegadas">
+        <div><b data-chegaram>0</b> de <b data-total-vendas>0</b> mesas com chegada confirmada</div>
+        <div class="barra"><i data-barra></i></div>
+      </div>
+      <input type="search" id="busca" class="busca-grande" placeholder="🔎 Nome ou nº da mesa" autocomplete="off" enterkeyhint="search" aria-label="Buscar venda">
+      <div class="filtros">
+        <div class="seg seg-sm" id="seg-status">
+          <input type="radio" name="status" id="st0" value="" checked><label for="st0">Todas</label>
+          <input type="radio" name="status" id="st1" value="aguardando"><label for="st1">Aguardando</label>
+          <input type="radio" name="status" id="st2" value="chegou"><label for="st2">Chegaram</label>
         </div>
       </div>
+      <details class="mais"><summary>Filtrar por vendedor ou pagamento</summary>
+        <div class="filtros filtros-sel">
+          <select id="filtro-vend" aria-label="Vendedor"><option value="">Todos os vendedores</option></select>
+          <select id="filtro-pag" aria-label="Forma de pagamento"><option value="">Todas as formas</option></select>
+        </div>
+      </details>
+      <div id="lista" class="lista" aria-live="polite"></div>
+      <div class="acoes exportar"><button class="btn btn-ghost" id="copiar-excel" type="button">📋 Copiar para o Excel</button><button class="btn btn-ghost" id="csv" type="button">⬇️ Baixar planilha (CSV)</button></div>
     </div>
   </section>
 </main>
@@ -365,8 +412,11 @@ contador(); setInterval(contador, 60000);
 
 // ------------------------------------------------------------ rotas
 function rota() {
-  const r = location.hash === "#mesas" ? "mesas" : "vendas";
+  const r = { "#mesas": "mesas", "#recepcao": "recepcao" }[location.hash] || "vendas";
   $("#tela-mesas").hidden = r !== "mesas";
+  $("#tela-recepcao").hidden = r !== "recepcao";
+  document.body.dataset.rota = r;
+  if (r === "recepcao" && matchMedia("(min-width: 821px)").matches) setTimeout(() => $("#busca").focus(), 50);
   $("#tela-vendas").hidden = r !== "vendas";
   $$(".nav a").forEach((a) => a.dataset.rota === r ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
 }
@@ -425,26 +475,45 @@ function renderVendedores() {
   $("[data-totsplit]").textContent = `💵 Dinheiro ${brl(tot.Dinheiro)} · ⚡ PIX ${brl(tot.PIX)} · ${vendas.length} mesa(s)`;
 }
 
+const norm = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 function filtradas() {
-  const q = $("#busca").value.trim().toLowerCase(), fv = $("#filtro-vend").value, fp = $("#filtro-pag").value;
+  const q = norm($("#busca").value.trim()), fv = $("#filtro-vend").value, fp = $("#filtro-pag").value;
+  const st = ($("input[name=status]:checked") || {}).value || "";
   return vendas.filter((v) =>
     (!fv || v.vendedor === fv) && (!fp || v.pagamento === fp) &&
-    (!q || [v.comprador, v.aluno, String(v.mesa), v.serie].some((x) => String(x).toLowerCase().includes(q)))
+    (!st || (st === "chegou") === !!v.chegada) &&
+    (!q || (/^\d+$/.test(q) ? String(v.mesa) === q : [v.comprador, v.aluno].some((x) => norm(x).includes(q))))
   ).sort((a, b) => a.mesa - b.mesa);
 }
+function marca(txt) {
+  const q = norm($("#busca").value.trim()); const t = esc(txt);
+  if (!q || /^\d+$/.test(q)) return t;
+  const i = norm(txt).indexOf(q); if (i < 0) return t;
+  return esc(txt.slice(0, i)) + "<mark>" + esc(txt.slice(i, i + q.length)) + "</mark>" + esc(txt.slice(i + q.length));
+}
+const hora = (d) => new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
 function renderLista() {
+  const chegaram = vendas.filter((v) => v.chegada).length;
+  $("[data-chegaram]").textContent = chegaram;
+  $("[data-total-vendas]").textContent = vendas.length;
+  $("[data-barra]").style.width = (vendas.length ? (chegaram / vendas.length) * 100 : 0) + "%";
   const l = filtradas();
-  $("#lista").innerHTML = l.length ? l.map((v) => `<tr>
-    <td class="m">${v.mesa}</td>
-    <td><b>${esc(v.comprador)}</b><br><span style="color:var(--muted)">Aluno: ${esc(v.aluno)}</span></td>
-    <td>${esc(v.serie)} ${esc(v.turma)}</td>
-    <td><span class="tag ${v.pagamento === "PIX" ? "pix" : "din"}">${esc(v.pagamento)}</span> ${brl(v.valor)}</td>
-    <td>${esc(primeiroNome(v.vendedor))}</td>
-    <td><div class="acoes"><button class="lnk" data-copiar="${v.mesa}">Comprovante</button><button class="lnk del" data-cancelar="${v.mesa}">Cancelar</button></div></td>
-  </tr>`).join("") : `<tr><td colspan="6" class="vazio">${vendas.length ? "Nenhuma venda encontrada com esse filtro." : "Nenhuma venda ainda. A primeira mesa está esperando! 🌱"}</td></tr>`;
+  $("#lista").innerHTML = l.length ? l.map((v) => `<article class="venda${v.chegada ? " chegou" : ""}">
+    <div class="vm">Mesa<b>${v.mesa}</b></div>
+    <div class="vi">
+      <b>${marca(v.comprador)}</b>
+      <span>Aluno: ${marca(v.aluno)} · ${esc(v.serie)} ${esc(v.turma)}</span>
+      <span>${esc(v.pagamento)} · ${brl(v.valor)} · vendida por ${esc(primeiroNome(v.vendedor))}</span>
+    </div>
+    <div class="vbtns">${v.chegada
+        ? `<span class="ok-chegou">✓ Chegou às ${hora(v.chegada)}</span>`
+        : `<button class="btn btn-chegada" data-chegada="${v.mesa}">Confirmar chegada</button>`}</div>
+    <div class="vlinks">${v.chegada ? `<button class="lnk" data-desfazer="${v.mesa}">Desfazer chegada</button>` : ""}<button class="lnk" data-copiar="${v.mesa}">Comprovante</button><button class="lnk del" data-cancelar="${v.mesa}">Cancelar venda</button></div>
+  </article>`).join("") : `<div class="vazio">${vendas.length ? "Nenhuma venda encontrada. Confira a grafia ou busque pelo nome do aluno." : "Nenhuma venda ainda. A primeira mesa está esperando! 🌱"}</div>`;
 }
 ["#busca", "#filtro-vend", "#filtro-pag"].forEach((s) => $(s).addEventListener("input", renderLista));
+$("#seg-status").addEventListener("change", renderLista);
 
 // ------------------------------------------------------------ util
 let toastT;
@@ -543,14 +612,22 @@ $("#form-venda").addEventListener("submit", async (e) => {
 
 $("#lista").addEventListener("click", async (e) => {
   const c = e.target.closest("[data-copiar]"), d = e.target.closest("[data-cancelar]");
+  const ok = e.target.closest("[data-chegada]"), un = e.target.closest("[data-desfazer]");
+  if (ok || un) {
+    const mesa = Number((ok || un).dataset.chegada || (ok || un).dataset.desfazer);
+    (ok || un).disabled = true;
+    try { await store.chegada(mesa, !!ok); toast(ok ? `Chegada confirmada — mesa ${mesa}. Boa festa! 🌸` : `Chegada da mesa ${mesa} desfeita.`); }
+    catch (err) { (ok || un).disabled = false; toast("Não foi possível salvar: " + err.message); }
+    return;
+  }
   if (c) copiar(vendas.find((v) => v.mesa === Number(c.dataset.copiar)));
   if (d) {
     const v = vendas.find((x) => x.mesa === Number(d.dataset.cancelar));
     if (!v) return;
     if (!d.classList.contains("confirma")) {
-      $$(".lnk.confirma").forEach((x) => { x.classList.remove("confirma"); x.textContent = "Cancelar"; });
+      $$(".lnk.confirma").forEach((x) => { x.classList.remove("confirma"); x.textContent = "Cancelar venda"; });
       d.classList.add("confirma"); d.textContent = "Confirmar cancelamento?";
-      setTimeout(() => { d.classList.remove("confirma"); d.textContent = "Cancelar"; }, 5000);
+      setTimeout(() => { d.classList.remove("confirma"); d.textContent = "Cancelar venda"; }, 5000);
       return;
     }
     {
@@ -561,9 +638,9 @@ $("#lista").addEventListener("click", async (e) => {
 });
 
 function tabela() {
-  const cab = ["Mesa", "Comprador", "Aluno", "Série", "Turma", "Pagamento", "Valor", "Vendedor", "Data/hora"];
+  const cab = ["Mesa", "Comprador", "Aluno", "Série", "Turma", "Pagamento", "Valor", "Vendedor", "Data/hora", "Chegada"];
   return [cab, ...[...vendas].sort((a, b) => a.mesa - b.mesa).map((v) => [v.mesa, v.comprador, v.aluno, v.serie, v.turma, v.pagamento,
-    String(v.valor).replace(".", ","), v.vendedor, new Date(v.criadoEm).toLocaleString("pt-BR")])];
+    String(v.valor).replace(".", ","), v.vendedor, new Date(v.criadoEm).toLocaleString("pt-BR"), v.chegada ? new Date(v.chegada).toLocaleString("pt-BR") : ""])];
 }
 $("#copiar-excel").addEventListener("click", async () => {
   const t = tabela().map((l) => l.join("\t")).join("\n");
@@ -571,9 +648,9 @@ $("#copiar-excel").addEventListener("click", async () => {
   catch { toast("Não foi possível copiar. Tente baixar o CSV."); }
 });
 $("#csv").addEventListener("click", () => {
-  const cab = ["Mesa", "Comprador", "Aluno", "Série", "Turma", "Pagamento", "Valor", "Vendedor", "Data/hora"];
+  const cab = ["Mesa", "Comprador", "Aluno", "Série", "Turma", "Pagamento", "Valor", "Vendedor", "Data/hora", "Chegada"];
   const linhas = [...vendas].sort((a, b) => a.mesa - b.mesa).map((v) => [v.mesa, v.comprador, v.aluno, v.serie, v.turma, v.pagamento,
-    String(v.valor).replace(".", ","), v.vendedor, new Date(v.criadoEm).toLocaleString("pt-BR")]);
+    String(v.valor).replace(".", ","), v.vendedor, new Date(v.criadoEm).toLocaleString("pt-BR"), v.chegada ? new Date(v.chegada).toLocaleString("pt-BR") : ""]);
   const csv = "﻿" + [cab, ...linhas].map((l) => l.map((x) => `"${String(x ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
