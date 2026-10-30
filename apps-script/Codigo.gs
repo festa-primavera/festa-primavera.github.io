@@ -26,10 +26,18 @@ function lerVendas_() {
         mesa: Number(r[0]), comprador: String(r[1]), aluno: String(r[2]),
         serie: String(r[3]), turma: String(r[4]), pagamento: String(r[5]),
         valor: Number(r[6]) || 0, vendedor: String(r[7]),
-        criadoEm: r[8] instanceof Date ? r[8].toISOString() : String(r[8] || ''),
-        chegada: r[9] instanceof Date ? r[9].toISOString() : String(r[9] || ''),
+        criadoEm: iso_(r[8]),
+        chegada: iso_(r[9]),
       };
     });
+}
+
+// Datas podem vir como Date ou como texto (planilha em formato texto)
+function iso_(x) {
+  if (x instanceof Date) return x.toISOString();
+  if (!x) return '';
+  const d = new Date(String(x).replace(/\s*\(.*\)\s*$/, ''));
+  return isNaN(d.getTime()) ? String(x) : d.toISOString();
 }
 
 function json_(obj) {
