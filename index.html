@@ -198,6 +198,29 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:0 16px 32px}
 .bola{animation:quica .8s cubic-bezier(.5,0,.5,1) infinite alternate}
 @keyframes quica{from{transform:translateY(-34px)}to{transform:translateY(0)}}
 @media (max-width:700px){.cena{height:150px}}/* cena-fim */
+/* layout-celular-ini */
+.mapa-card{align-self:start}
+@media (min-width:821px){.mapa-card{position:sticky;top:12px}}
+.sub{font-size:13px;font-weight:700;color:var(--muted);margin:-8px 0 12px}
+.curto{display:none}
+@media (max-width:700px){
+  .hero{padding-top:12px}
+  .hero .escola{font-size:10px;letter-spacing:.04em}
+  .hero h1{font-size:28px;margin:2px 0 8px}
+  .chips{gap:6px;flex-wrap:nowrap}
+  .chip{font-size:12px;padding:4px 10px;white-space:nowrap}
+  .longo{display:none}.curto{display:inline}
+  .nav{margin-top:10px}
+  .nav a{padding:7px 14px;font-size:14px}
+  .cena{height:78px;margin-top:4px}
+  .cena svg{width:100%}
+  .ipe{display:none}
+  main{margin-top:-14px}
+  .card{padding:16px}
+  .card-head{margin-bottom:10px}
+  .card-head h2{font-size:20px}
+}
+/* layout-celular-fim */
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -209,12 +232,12 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:0 16px 32px}
     <div class="escola">Escola Municipal Deputado Federal Ulisses Guimarães</div>
     <h1>Festa da <em>Primavera</em></h1>
     <div class="chips">
-      <span class="chip">📅 Quinta, 05 de novembro de 2026</span>
+      <span class="chip">📅 <span class="longo">Quinta, 05 de novembro de 2026</span><span class="curto">Qui, 05/11</span></span>
       <span class="chip" id="contador">⏳ …</span>
     </div>
     <nav class="nav">
-      <a href="#mesas" data-rota="mesas">Mesas</a>
-      <a href="#vendas" data-rota="vendas">Área de vendas</a>
+      <a href="#vendas" data-rota="vendas">Vender mesa</a>
+      <a href="#mesas" data-rota="mesas">Resumo</a>
     </nav>
   </div>
 <div class="cena" aria-hidden="true"><svg viewBox="0 0 1000 200" preserveAspectRatio="xMidYMax slice" focusable="false"><path d="M0 22 Q250 62 500 22 Q750 62 1000 22" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/><circle class="luz" style="animation-delay:-0.0s" cx="38.5" cy="32.7" r="4.5" fill="#FFD45C"/><circle class="luz" style="animation-delay:-0.4s" cx="76.9" cy="37.4" r="4.5" fill="#C77DFF"/><circle class="luz" style="animation-delay:-0.8s" cx="115.4" cy="41.2" r="4.5" fill="#7EE0A8"/><circle class="luz" style="animation-delay:-1.2s" cx="153.8" cy="44.0" r="4.5" fill="#FF9ECF"/><circle class="luz" style="animation-delay:-1.6s" cx="192.3" cy="45.9" r="4.5" fill="#FFD45C"/><circle class="luz" style="animation-delay:-0.0s" cx="230.8" cy="46.9" r="4.5" fill="#C77DFF"/><circle class="luz" style="animation-delay:-0.4s" cx="269.2" cy="46.9" r="4.5" fill="#7EE0A8"/><circle class="luz" style="animation-delay:-0.8s" cx="307.7" cy="45.9" r="4.5" fill="#FF9ECF"/><circle class="luz" style="animation-delay:-1.2s" cx="346.2" cy="44.0" r="4.5" fill="#FFD45C"/><circle class="luz" style="animation-delay:-1.6s" cx="384.6" cy="41.2" r="4.5" fill="#C77DFF"/><circle class="luz" style="animation-delay:-0.0s" cx="423.1" cy="37.4" r="4.5" fill="#7EE0A8"/><circle class="luz" style="animation-delay:-0.4s" cx="461.5" cy="32.7" r="4.5" fill="#FF9ECF"/><circle class="luz" style="animation-delay:-0.8s" cx="538.5" cy="32.7" r="4.5" fill="#FFD45C"/><circle class="luz" style="animation-delay:-1.2s" cx="576.9" cy="37.4" r="4.5" fill="#C77DFF"/><circle class="luz" style="animation-delay:-1.6s" cx="615.4" cy="41.2" r="4.5" fill="#7EE0A8"/><circle class="luz" style="animation-delay:-0.0s" cx="653.8" cy="44.0" r="4.5" fill="#FF9ECF"/><circle class="luz" style="animation-delay:-0.4s" cx="692.3" cy="45.9" r="4.5" fill="#FFD45C"/><circle class="luz" style="animation-delay:-0.8s" cx="730.8" cy="46.9" r="4.5" fill="#C77DFF"/><circle class="luz" style="animation-delay:-1.2s" cx="769.2" cy="46.9" r="4.5" fill="#7EE0A8"/><circle class="luz" style="animation-delay:-1.6s" cx="807.7" cy="45.9" r="4.5" fill="#FF9ECF"/><circle class="luz" style="animation-delay:-0.0s" cx="846.2" cy="44.0" r="4.5" fill="#FFD45C"/><circle class="luz" style="animation-delay:-0.4s" cx="884.6" cy="41.2" r="4.5" fill="#C77DFF"/><circle class="luz" style="animation-delay:-0.8s" cx="923.1" cy="37.4" r="4.5" fill="#7EE0A8"/><circle class="luz" style="animation-delay:-1.2s" cx="961.5" cy="32.7" r="4.5" fill="#FF9ECF"/><g class="escola" opacity=".95">
@@ -226,7 +249,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:0 16px 32px}
 
 <main class="wrap">
   <!-- =============== RESUMO (público) =============== -->
-  <section id="tela-mesas" class="stack">
+  <section id="tela-mesas" class="stack" hidden>
     <div class="card esgotado" id="esgotado" role="status">
       <h2>🎉 Mesas esgotadas!</h2>
       <p>Todas as mesas da Festa da Primavera foram vendidas. Obrigado a todos — nos vemos no dia 05/11!</p>
@@ -258,14 +281,20 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:0 16px 32px}
   </section>
 
   <!-- =============== VENDAS =============== -->
-  <section id="tela-vendas" hidden>
+  <section id="tela-vendas">
     <div class="demo" id="aviso-demo" hidden>Modo demonstração: os dados ficam só neste navegador. Ligue a planilha do Google Drive no arquivo <b>config.js</b> para salvar online e em tempo real.</div>
 
     <div id="painel" class="stack">
 
       <div class="grid2">
+        <div class="card mapa-card">
+          <div class="card-head"><h2>Escolha a mesa</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
+          <div class="sub"><span data-contagem></span> · toque numa mesa livre</div>
+            <div class="mapa" id="mapa-vendas"></div>
+            <div class="legenda"><span><i></i>Livre</span><span><i class="s"></i>Selecionada</span><span><i class="v"></i>Vendida</span></div>
+        </div>
         <div class="card">
-          <div class="card-head"><h2>Nova venda</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
+          <div class="card-head"><h2>Nova venda</h2></div>
           <form id="form-venda" novalidate>
             <div class="row fixa">
               <label>Mesa nº<input name="mesa" id="sel-mesa" type="number" inputmode="numeric" min="1" max="50" placeholder="Ex.: 8" autocomplete="off" required></label>
@@ -282,19 +311,12 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:0 16px 32px}
             <button class="btn btn-primary" type="submit" id="salvar">💾 Salvar venda</button>
           </form>
         </div>
+      </div>
 
-        <div class="stack">
-          <div class="card">
-            <div class="card-head"><h2>Escolha a mesa</h2><span class="contagem" data-contagem></span></div>
-            <div class="mapa" id="mapa-vendas"></div>
-            <div class="legenda"><span><i></i>Disponível</span><span><i class="s"></i>Selecionada</span><span><i class="v"></i>Vendida</span></div>
-          </div>
-          <div class="card">
+      <div class="card">
             <div class="card-head"><h2>Recebido por vendedor</h2></div>
             <div class="vendedores" id="vendedores"></div>
             <div class="totgeral"><span><b data-totgeral>R$ 0,00</b><br><small data-totsplit></small></span></div>
-          </div>
-        </div>
       </div>
 
       <div class="card">
@@ -343,7 +365,7 @@ contador(); setInterval(contador, 60000);
 
 // ------------------------------------------------------------ rotas
 function rota() {
-  const r = location.hash === "#vendas" ? "vendas" : "mesas";
+  const r = location.hash === "#mesas" ? "mesas" : "vendas";
   $("#tela-mesas").hidden = r !== "mesas";
   $("#tela-vendas").hidden = r !== "vendas";
   $$(".nav a").forEach((a) => a.dataset.rota === r ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
