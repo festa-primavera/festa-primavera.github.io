@@ -233,6 +233,8 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 /* recepcao-fim */
 /* layout-celular-ini */
 .mapa-card{align-self:start}
+.btn-continuar{width:100%;margin-top:14px;background:var(--green-2);color:#fff;font-size:16px}
+.grupo{display:block;font-size:12px;font-weight:800;color:var(--pink);margin-top:2px}
 @media (min-width:821px){.mapa-card{position:sticky;top:12px}}
 .sub{font-size:13px;font-weight:700;color:var(--muted);margin:-8px 0 12px}
 .curto{display:none}
@@ -324,18 +326,19 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
       <div class="grid2">
         <div class="card mapa-card">
           <div class="card-head"><h2>Escolha a mesa</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
-          <div class="sub"><span data-contagem></span> · toque numa mesa livre</div>
+          <div class="sub"><span data-contagem></span> · toque em uma ou mais mesas livres</div>
             <div class="mapa" id="mapa-vendas"></div>
             <div class="legenda"><span><i></i>Livre</span><span><i class="s"></i>Selecionada</span><span><i class="v"></i>Vendida</span></div>
+            <button type="button" class="btn btn-continuar" id="continuar" hidden></button>
         </div>
         <div class="card">
           <div class="card-head"><h2>Nova venda</h2></div>
           <form id="form-venda" novalidate>
             <div class="row fixa">
-              <label>Mesa nº<input name="mesa" id="sel-mesa" type="number" inputmode="numeric" min="1" max="50" placeholder="Ex.: 8" autocomplete="off" required></label>
-              <label>Valor (R$)<input name="valor" id="valor" type="number" inputmode="decimal" min="0" step="0.01" required></label>
+              <label>Mesa(s) nº<input name="mesa" id="sel-mesa" type="text" inputmode="decimal" placeholder="Ex.: 8 ou 8, 9" autocomplete="off" required></label>
+              <label><span id="rot-valor">Valor (R$)</span><input name="valor" id="valor" type="number" inputmode="decimal" min="0" step="0.01" required></label>
             </div>
-            <div class="dica" id="dica-mesa" aria-live="polite">Digite o número ou toque na mesa no mapa.</div>
+            <div class="dica" id="dica-mesa" aria-live="polite">Toque em uma ou mais mesas no mapa, ou digite os números.</div>
             <label>Vendedor(a)<select name="vendedor" id="sel-vendedor" required></select></label>
             <label>Nome do comprador<input name="comprador" autocomplete="off" required maxlength="100" placeholder="Ex.: Ana Paula Souza"></label>
             <label>Nome do aluno<input name="aluno" autocomplete="off" required maxlength="100" placeholder="Ex.: João Pedro Souza"></label>
@@ -389,8 +392,8 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 <div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Copiar comprovante</button></div>
 
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-1727";
-import { criarStore } from "./store.js?v=20261030-1727";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-1735";
+import { criarStore } from "./store.js?v=20261030-1735";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -400,7 +403,7 @@ const CORES = ["#9B4DCA", "#2F8F5B", "#C98400", "#3F6FB0"];
 const iniciais = (n) => n.split(" ").filter((p) => p.length > 2).slice(0, 1).concat(n.split(" ").slice(-1)).map((p) => p[0]).join("");
 const primeiroNome = (n) => n.split(" ")[0][0] + n.split(" ")[0].slice(1).toLowerCase();
 
-let vendidas = [], vendas = [], selecionada = null, anteriores = new Set(), primeiraCarga = true;
+let vendidas = [], vendas = [], selecionadas = [], anteriores = new Set(), primeiraCarga = true;
 
 // ------------------------------------------------------------ contador
 function contador() {
@@ -450,7 +453,7 @@ function renderResumo() {
     const v = set.has(i), cls = `mesa${v ? " vendida" : ""}${novas.has(i) ? " nova" : ""}`;
     pub += v ? `<div class="${cls}" title="Mesa ${i} — vendida">${i}</div>`
              : `<button type="button" class="${cls}" data-m="${i}" title="Vender a mesa ${i}">${i}</button>`;
-    ven += `<button type="button" class="${cls}${selecionada === i ? " sel" : ""}" data-m="${i}" ${v ? "disabled" : ""} aria-label="Mesa ${i}${v ? " (vendida)" : ""}">${i}</button>`;
+    ven += `<button type="button" class="${cls}${selecionadas.includes(i) ? " sel" : ""}" data-m="${i}" ${v ? "disabled" : ""} aria-label="Mesa ${i}${v ? " (vendida)" : ""}">${i}</button>`;
   }
   $("#mapa-publico").innerHTML = pub;
   $("#mapa-vendas").innerHTML = ven;
@@ -505,10 +508,11 @@ function renderLista() {
       <b>${marca(v.comprador)}</b>
       <span>Aluno: ${marca(v.aluno)} · ${esc(v.serie)} ${esc(v.turma)}</span>
       <span>${esc(v.pagamento)} · ${brl(v.valor)} · vendida por ${esc(primeiroNome(v.vendedor))}</span>
+      ${grupoDe(v).length > 1 ? `<span class="grupo">Comprou ${grupoDe(v).length} mesas: ${listaMesas(grupoDe(v).map((x) => x.mesa))}</span>` : ""}
     </div>
     <div class="vbtns">${v.chegada
         ? `<span class="ok-chegou">✓ Chegou às ${hora(v.chegada)}</span>`
-        : `<button class="btn btn-chegada" data-chegada="${v.mesa}">Confirmar chegada</button>`}</div>
+        : ((p) => `<button class="btn btn-chegada" data-chegada="${p.join(",")}">Confirmar chegada${p.length > 1 ? ` (${p.length} mesas)` : ""}</button>`)(grupoDe(v).filter((x) => !x.chegada).map((x) => x.mesa))}</div>
     <div class="vlinks">${v.chegada ? `<button class="lnk" data-desfazer="${v.mesa}">Desfazer chegada</button>` : ""}<button class="lnk" data-copiar="${v.mesa}">Comprovante</button><button class="lnk del" data-cancelar="${v.mesa}">Cancelar venda</button></div>
   </article>`).join("") : `<div class="vazio">${vendas.length ? "Nenhuma venda encontrada. Confira a grafia ou busque pelo nome do aluno." : "Nenhuma venda ainda. A primeira mesa está esperando! 🌱"}</div>`;
 }
@@ -523,15 +527,21 @@ function toast(msg, comprovante) {
   $("#toast").classList.add("on"); clearTimeout(toastT);
   toastT = setTimeout(() => $("#toast").classList.remove("on"), comprovante ? 7000 : 3500);
 }
-const comprovanteTxt = (v) =>
-`🌸 *Festa da Primavera 2026*
+// "8", "8 e 9", "8, 9 e 10"
+const listaMesas = (l) => l.length < 2 ? String(l[0] ?? "") : l.slice(0, -1).join(", ") + " e " + l[l.length - 1];
+const comprovanteTxt = (v) => {
+  const m = v.mesas || [v.mesa];
+  return `🌸 *Festa da Primavera 2026*
 E.M. Dep. Federal Ulisses Guimarães — 05/11/2026
 
-✅ Mesa nº *${v.mesa}* garantida!
+✅ ${m.length > 1 ? `Mesas nº *${listaMesas(m)}* garantidas!` : `Mesa nº *${m[0]}* garantida!`}
 Comprador: ${v.comprador}
 Aluno: ${v.aluno} (${v.serie} ${v.turma})
-Pagamento: ${v.pagamento} — ${brl(v.valor)}
+Pagamento: ${v.pagamento} — ${brl(v.total ?? v.valor)}
 Vendedor(a): ${v.vendedor}`;
+};
+// Todas as mesas compradas pelo mesmo comprador para o mesmo aluno
+const grupoDe = (v) => vendas.filter((x) => x.comprador === v.comprador && x.aluno === v.aluno).sort((a, b) => a.mesa - b.mesa);
 async function copiar(v) {
   const t = comprovanteTxt(v);
   try { await navigator.clipboard.writeText(t); toast("Comprovante copiado — é só colar no WhatsApp."); }
@@ -550,33 +560,53 @@ window.addEventListener("online", () => status(true));
 store.onVendas((l) => { vendas = l; renderVendedores(); renderLista(); },
   (e) => toast("Não foi possível carregar as vendas: " + e.message));
 
-// Destaca no mapa a mesa digitada e avisa se já foi vendida
-function marcarMesa() {
-  const campo = $("#sel-mesa"), dica = $("#dica-mesa");
-  const m = Number(campo.value);
-  selecionada = Number.isInteger(m) && m >= 1 && m <= TOTAL_MESAS ? m : null;
-  const vendida = selecionada && vendidas.includes(selecionada);
-  $$("#mapa-vendas .mesa").forEach((x) => x.classList.toggle("sel", Number(x.dataset.m) === selecionada && !vendida));
-  $$("#mapa-vendas .mesa").forEach((x) => x.classList.toggle("alerta", Number(x.dataset.m) === selecionada && !!vendida));
-  dica.classList.remove("ok", "ruim");
-  if (!campo.value) dica.textContent = "Digite o número ou toque na mesa no mapa.";
-  else if (!selecionada) { dica.textContent = `Digite um número de 1 a ${TOTAL_MESAS}.`; dica.classList.add("ruim"); }
-  else if (vendida) { dica.textContent = `A mesa ${selecionada} já foi vendida. Escolha outra.`; dica.classList.add("ruim"); }
-  else { dica.textContent = `Mesa ${selecionada} disponível ✓`; dica.classList.add("ok"); }
+// Lê "8, 9" / "8 9" / "8-10" e devolve a lista de números
+function lerMesas(txt) {
+  const out = [];
+  String(txt).replace(/(\d+)\s*-\s*(\d+)|(\d+)/g, (_, a, b, c) => {
+    if (c) out.push(Number(c));
+    else for (let i = Number(a); i <= Number(b) && i - Number(a) < TOTAL_MESAS; i++) out.push(i);
+  });
+  return [...new Set(out)];
 }
-function escolherMesa(m) {
-  $("#sel-mesa").value = m; marcarMesa();
+// Destaca no mapa as mesas digitadas/escolhidas e avisa se alguma já foi vendida
+function marcarMesa() {
+  const campo = $("#sel-mesa"), dica = $("#dica-mesa"), cont = $("#continuar");
+  const nums = lerMesas(campo.value);
+  const fora = nums.filter((m) => m < 1 || m > TOTAL_MESAS);
+  const ja = nums.filter((m) => vendidas.includes(m));
+  selecionadas = nums.filter((m) => m >= 1 && m <= TOTAL_MESAS).sort((a, b) => a - b);
+  $$("#mapa-vendas .mesa").forEach((x) => {
+    const m = Number(x.dataset.m);
+    x.classList.toggle("sel", selecionadas.includes(m) && !ja.includes(m));
+    x.classList.toggle("alerta", ja.includes(m));
+  });
+  const n = selecionadas.length, total = VALOR_MESA * Math.max(n, 1);
+  if (VALOR_MESA > 0) { $("#valor").value = brl(total); $("#rot-valor").textContent = n > 1 ? `Total (${n} mesas)` : "Valor (R$)"; }
+  dica.classList.remove("ok", "ruim");
+  const valido = n > 0 && !fora.length && !ja.length;
+  if (!campo.value.trim()) dica.textContent = "Toque em uma ou mais mesas no mapa, ou digite os números.";
+  else if (fora.length || !n) { dica.textContent = `Use números de 1 a ${TOTAL_MESAS}.`; dica.classList.add("ruim"); }
+  else if (ja.length) { dica.textContent = `${ja.length > 1 ? "As mesas " + listaMesas(ja) + " já foram vendidas" : "A mesa " + ja[0] + " já foi vendida"}. Escolha outra.`; dica.classList.add("ruim"); }
+  else { dica.textContent = n > 1 ? `${n} mesas: ${listaMesas(selecionadas)} ✓` : `Mesa ${selecionadas[0]} disponível ✓`; dica.classList.add("ok"); }
+  cont.hidden = !valido;
+  if (valido) cont.textContent = `Continuar com ${n > 1 ? "as mesas " + listaMesas(selecionadas) : "a mesa " + selecionadas[0]} →`;
+}
+function irParaFormulario() {
   const f = $("#form-venda"), alvo = $("input[name=comprador]");
   if (f.getBoundingClientRect().top < 0 || f.getBoundingClientRect().bottom > innerHeight) f.scrollIntoView({ behavior: "smooth", block: "start" });
   setTimeout(() => alvo.focus({ preventScroll: true }), 350);
 }
 $("#mapa-vendas").addEventListener("click", (e) => {
   const b = e.target.closest("button.mesa"); if (!b || b.disabled) return;
-  escolherMesa(Number(b.dataset.m));
+  const m = Number(b.dataset.m);
+  const l = selecionadas.includes(m) ? selecionadas.filter((x) => x !== m) : [...selecionadas, m].sort((a, b) => a - b);
+  $("#sel-mesa").value = l.join(", "); marcarMesa();
 });
+$("#continuar").addEventListener("click", irParaFormulario);
 $("#mapa-publico").addEventListener("click", (e) => {
   const b = e.target.closest("button.mesa"); if (!b) return;
-  location.hash = "#vendas"; escolherMesa(Number(b.dataset.m));
+  location.hash = "#vendas"; $("#sel-mesa").value = b.dataset.m; marcarMesa(); irParaFormulario();
 });
 $("#sel-mesa").addEventListener("input", marcarMesa);
 
@@ -584,19 +614,20 @@ $("#form-venda").addEventListener("submit", async (e) => {
   e.preventDefault();
   const f = new FormData(e.target), erro = $("#erro-venda");
   const v = {
-    mesa: Number(f.get("mesa")), valor: VALOR_MESA > 0 ? VALOR_MESA : Number(f.get("valor")),
+    mesas: [...selecionadas], valor: VALOR_MESA > 0 ? VALOR_MESA : Number(f.get("valor")),
     vendedor: f.get("vendedor"), comprador: (f.get("comprador") || "").trim().toUpperCase(),
     aluno: (f.get("aluno") || "").trim().toUpperCase(), serie: f.get("serie"),
     turma: f.get("turma"), pagamento: f.get("pagamento"),
   };
   const faltando = [
-    [!v.mesa, "a mesa"], [!(v.valor > 0), "o valor"], [!v.vendedor, "o(a) vendedor(a)"],
+    [!v.mesas.length, "a mesa"], [!(v.valor > 0), "o valor"], [!v.vendedor, "o(a) vendedor(a)"],
     [!v.comprador, "o nome do comprador"], [!v.aluno, "o nome do aluno"], [!v.serie, "a série"],
     [!v.turma, "a turma"], [!v.pagamento, "a forma de pagamento"],
   ].filter(([x]) => x).map(([, t]) => t);
   if (faltando.length) { erro.textContent = "Preencha " + faltando.join(", ") + "."; return; }
-  if (!(v.mesa >= 1 && v.mesa <= TOTAL_MESAS)) { erro.textContent = `A mesa deve ser de 1 a ${TOTAL_MESAS}.`; return; }
-  if (vendidas.includes(v.mesa)) { erro.textContent = `A mesa ${v.mesa} já foi vendida. Escolha outra.`; return; }
+  if (lerMesas($("#sel-mesa").value).some((m) => m < 1 || m > TOTAL_MESAS)) { erro.textContent = `As mesas vão de 1 a ${TOTAL_MESAS}.`; return; }
+  const ja = v.mesas.filter((m) => vendidas.includes(m));
+  if (ja.length) { erro.textContent = `${ja.length > 1 ? "As mesas " + listaMesas(ja) + " já foram vendidas" : "A mesa " + ja[0] + " já foi vendida"}. Escolha outra.`; return; }
   erro.textContent = ""; $("#salvar").disabled = true; $("#salvar").textContent = "Salvando…";
   try {
     await store.vender(v);
@@ -604,8 +635,8 @@ $("#form-venda").addEventListener("submit", async (e) => {
     ["comprador", "aluno"].forEach((n) => (e.target.elements[n].value = ""));
     e.target.elements.serie.value = "";
     $$("#form-venda input[type=radio]").forEach((r) => (r.checked = false));
-    e.target.elements.mesa.value = ""; selecionada = null; renderResumo();
-    toast(`Mesa ${v.mesa} vendida! 🌸`, v);
+    e.target.elements.mesa.value = ""; selecionadas = []; renderResumo();
+    toast(v.mesas.length > 1 ? `Mesas ${listaMesas(v.mesas)} vendidas! 🌸` : `Mesa ${v.mesas[0]} vendida! 🌸`, { ...v, total: v.valor * v.mesas.length });
   } catch (err) { erro.textContent = err.message || "Não foi possível salvar. Verifique a internet."; }
   finally { $("#salvar").textContent = "💾 Salvar venda"; $("#salvar").disabled = vendidas.length >= TOTAL_MESAS; }
 });
@@ -614,13 +645,17 @@ $("#lista").addEventListener("click", async (e) => {
   const c = e.target.closest("[data-copiar]"), d = e.target.closest("[data-cancelar]");
   const ok = e.target.closest("[data-chegada]"), un = e.target.closest("[data-desfazer]");
   if (ok || un) {
-    const mesa = Number((ok || un).dataset.chegada || (ok || un).dataset.desfazer);
+    const mesas = String((ok || un).dataset.chegada || (ok || un).dataset.desfazer).split(",").map(Number);
     (ok || un).disabled = true;
-    try { await store.chegada(mesa, !!ok); toast(ok ? `Chegada confirmada — mesa ${mesa}. Boa festa! 🌸` : `Chegada da mesa ${mesa} desfeita.`); }
+    const txt = mesas.length > 1 ? `mesas ${listaMesas(mesas)}` : `mesa ${mesas[0]}`;
+    try { await store.chegada(mesas, !!ok); toast(ok ? `Chegada confirmada — ${txt}. Boa festa! 🌸` : `Chegada da ${txt} desfeita.`); }
     catch (err) { (ok || un).disabled = false; toast("Não foi possível salvar: " + err.message); }
     return;
   }
-  if (c) copiar(vendas.find((v) => v.mesa === Number(c.dataset.copiar)));
+  if (c) {
+    const v = vendas.find((x) => x.mesa === Number(c.dataset.copiar)); const g = grupoDe(v);
+    copiar({ ...v, mesas: g.map((x) => x.mesa), total: g.reduce((s, x) => s + (+x.valor || 0), 0) });
+  }
   if (d) {
     const v = vendas.find((x) => x.mesa === Number(d.dataset.cancelar));
     if (!v) return;

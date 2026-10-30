@@ -1,5 +1,5 @@
 // Camada de dados: planilha do Google Drive (via Google Apps Script) ou modo demonstração
-import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261030-1727";
+import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261030-1735";
 
 export async function criarStore() {
   return APPS_SCRIPT_URL ? planilhaStore() : demoStore();
@@ -46,7 +46,7 @@ function planilhaStore() {
     onVendas(cb, onErr) { ouvVen.add(cb); onErr && ouvErr.add(onErr); iniciar(); },
     vender: (venda) => enviar({ acao: "vender", venda }),
     cancelar: (mesa) => enviar({ acao: "cancelar", mesa }),
-    chegada: (mesa, chegou) => enviar({ acao: "chegada", mesa, chegou }),
+    chegada: (mesas, chegou) => enviar({ acao: "chegada", mesas: [].concat(mesas), chegou }),
   };
 }
 
@@ -69,13 +69,16 @@ function demoStore() {
     onPublico(cb) { ouvintesPub.add(cb); setTimeout(avisar); },
     onVendas(cb) { ouvintesVen.add(cb); setTimeout(avisar); },
     async vender(v) {
-      const l = ler();
-      if (l.some((x) => x.mesa === v.mesa)) throw new Error(`A mesa ${v.mesa} já foi vendida.`);
-      l.push({ ...v, criadoEm: new Date().toISOString() }); gravar(l);
+      const l = ler(), mesas = v.mesas || [v.mesa];
+      const ja = mesas.filter((m) => l.some((x) => x.mesa === m));
+      if (ja.length) throw new Error(`A mesa ${ja.join(", ")} já foi vendida.`);
+      const { mesas: _m, ...base } = v;
+      mesas.forEach((mesa) => l.push({ ...base, mesa, criadoEm: new Date().toISOString() })); gravar(l);
     },
     async cancelar(mesa) { gravar(ler().filter((x) => x.mesa !== mesa)); },
-    async chegada(mesa, chegou) {
-      gravar(ler().map((x) => x.mesa === mesa ? { ...x, chegada: chegou ? new Date().toISOString() : "" } : x));
+    async chegada(mesas, chegou) {
+      const lista = [].concat(mesas);
+      gravar(ler().map((x) => lista.includes(x.mesa) ? { ...x, chegada: chegou ? new Date().toISOString() : "" } : x));
     },
   };
 }

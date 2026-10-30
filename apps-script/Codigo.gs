@@ -65,27 +65,35 @@ function doPost(e) {
 
     if (d.acao === 'vender') {
       const v = d.venda || {};
-      const mesa = Number(v.mesa);
-      if (!(mesa >= 1 && mesa <= TOTAL_MESAS)) throw new Error('Mesa inválida.');
-      if (vendas.some(function (x) { return x.mesa === mesa; }))
-        throw new Error('A mesa ' + mesa + ' acabou de ser vendida por outra pessoa.');
+      // Uma venda pode ter várias mesas: grava todas ou nenhuma
+      const mesas = (Array.isArray(v.mesas) ? v.mesas : [v.mesa]).map(Number)
+        .filter(function (m, i, a) { return a.indexOf(m) === i; });
+      if (!mesas.length || mesas.some(function (m) { return !(m >= 1 && m <= TOTAL_MESAS); }))
+        throw new Error('Mesa inválida.');
+      const ja = mesas.filter(function (m) { return vendas.some(function (x) { return x.mesa === m; }); });
+      if (ja.length) throw new Error((ja.length > 1 ? 'As mesas ' + ja.join(', ') + ' acabaram de ser vendidas'
+        : 'A mesa ' + ja[0] + ' acabou de ser vendida') + ' por outra pessoa.');
       if (!(Number(v.valor) > 0)) throw new Error('Informe o valor.');
       if (PAGAMENTOS.indexOf(v.pagamento) < 0) throw new Error('Forma de pagamento inválida.');
       if (TURMAS.indexOf(v.turma) < 0) throw new Error('Turma inválida.');
       if (!String(v.comprador || '').trim() || !String(v.aluno || '').trim())
         throw new Error('Preencha comprador e aluno.');
-      sh.appendRow([mesa, texto_(v.comprador), texto_(v.aluno), texto_(v.serie), v.turma,
-        v.pagamento, Number(v.valor), texto_(v.vendedor), new Date()]);
+      const agora = new Date();
+      const linhas = mesas.map(function (m) {
+        return [m, texto_(v.comprador), texto_(v.aluno), texto_(v.serie), v.turma,
+          v.pagamento, Number(v.valor), texto_(v.vendedor), agora];
+      });
+      sh.getRange(sh.getLastRow() + 1, 1, linhas.length, 9).setValues(linhas);
     } else if (d.acao === 'chegada') {
       // Recepção no dia da festa: marca (ou desmarca) a chegada do comprador
-      const mesa = Number(d.mesa);
+      const alvo = (Array.isArray(d.mesas) ? d.mesas : [d.mesa]).map(Number);
       if (sh.getRange(1, 10).getValue() === '') sh.getRange(1, 10).setValue('Chegada');
       const col = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
-      let achou = false;
+      let achou = 0;
       for (let i = 1; i < col.length; i++) {
-        if (Number(col[i][0]) === mesa) { sh.getRange(i + 1, 10).setValue(d.chegou ? new Date() : ''); achou = true; break; }
+        if (alvo.indexOf(Number(col[i][0])) >= 0) { sh.getRange(i + 1, 10).setValue(d.chegou ? new Date() : ''); achou++; }
       }
-      if (!achou) throw new Error('A mesa ' + mesa + ' não tem venda registrada.');
+      if (!achou) throw new Error('Mesa sem venda registrada.');
     } else if (d.acao === 'cancelar') {
       const mesa = Number(d.mesa);
       const col = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
