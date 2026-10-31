@@ -38,7 +38,7 @@ button,input,select{font:inherit}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.85);border:1px solid #fff;color:var(--green);padding:6px 12px;border-radius:999px;font-weight:800;font-size:14px;box-shadow:0 2px 8px rgba(11,79,92,.08)}
-.palco{position:relative;height:200px;pointer-events:none}
+.palco{position:relative;height:180px;pointer-events:none}
 .nav{display:inline-flex;gap:4px;background:rgba(11,79,92,.92);padding:4px;border-radius:999px;box-shadow:0 6px 18px rgba(11,79,92,.25);position:relative;z-index:3}
 .nav a{color:#fff;text-decoration:none;font-weight:800;padding:9px 18px;border-radius:999px;font-size:15px;text-align:center}
 .nav a[aria-current="page"]{background:var(--sun);color:var(--green)}
@@ -49,48 +49,24 @@ button,input,select{font:inherit}
 @keyframes cair{0%{transform:translate(0,0) rotate(0) scale(var(--s))}50%{transform:translate(-30px,210px) rotate(180deg) scale(var(--s))}100%{transform:translate(10px,440px) rotate(360deg) scale(var(--s));opacity:0}}
 /* avião com faixa: passa da direita para a esquerda */
 .palco svg *{transform-box:fill-box}
-.aviao{position:absolute;top:0;left:0;width:400px;animation:voo 24s linear infinite;will-change:transform}
+.aviao{position:absolute;top:0;left:0;width:400px;animation:voo 14s linear infinite;will-change:transform}
 .aviao svg{display:block;width:100%;height:auto;overflow:visible;animation:sobe 2.4s ease-in-out infinite alternate}
-@keyframes voo{0%{transform:translateX(100vw)}38%{transform:translateX(-105%)}100%{transform:translateX(-105%)}}
+@keyframes voo{0%{transform:translateX(100vw)}65%{transform:translateX(-105%)}100%{transform:translateX(-105%)}}
 @keyframes sobe{to{transform:translateY(-6px) rotate(-1.5deg)}}
 .helice{transform-origin:center;animation:helice .09s linear infinite alternate}
 @keyframes helice{to{transform:scaleY(.12)}}
 .faixa{transform-origin:0% 50%;animation:tremula 1.1s ease-in-out infinite alternate}
 @keyframes tremula{from{transform:skewY(2.5deg) scaleY(1.02)}to{transform:skewY(-2.5deg) scaleY(.98)}}
-/* menina correndo atrás da borboleta: entra pela esquerda, vai até a direita, volta e some à esquerda */
-.corrida{position:absolute;left:0;bottom:4px;width:150px;transform:translateX(-130%);animation:corre 24s linear infinite;will-change:transform}
-.vira{animation:vira 24s linear infinite}
-.vira svg{display:block;width:100%;height:auto;overflow:visible}
-@keyframes corre{0%,40%{transform:translateX(-130%)}72%{transform:translateX(calc(100vw - 175%))}100%{transform:translateX(-130%)}}
-@keyframes vira{0%,71.6%{transform:scaleX(1)}72.4%,100%{transform:scaleX(-1)}}
-.menina{animation:pula .19s ease-in-out infinite alternate}
-@keyframes pula{to{transform:translateY(-3px)}}
-.sombra{transform-origin:center;animation:sombra .19s ease-in-out infinite alternate}
-@keyframes sombra{to{transform:scaleX(.85);opacity:.12}}
-.perna{transform-origin:50% 0%;animation:passo .38s ease-in-out infinite alternate}
-.perna.p2{animation-delay:-.38s}
-@keyframes passo{from{transform:rotate(36deg)}to{transform:rotate(-36deg)}}
-.braco-t{transform-origin:100% 0%;animation:balanco .38s ease-in-out infinite alternate}
-@keyframes balanco{from{transform:rotate(-40deg)}to{transform:rotate(30deg)}}
-.braco-f{transform-origin:0% 100%;animation:alcanca .38s ease-in-out infinite alternate}
-@keyframes alcanca{from{transform:rotate(-12deg)}to{transform:rotate(10deg)}}
-.rabo{transform-origin:100% 20%;animation:rabo .38s ease-in-out infinite alternate}
-@keyframes rabo{from{transform:rotate(-10deg)}to{transform:rotate(14deg)}}
-.borb{transform-origin:center;animation:voa 1.3s ease-in-out infinite alternate}
-@keyframes voa{0%{transform:translate(0,4px) rotate(10deg)}50%{transform:translate(5px,-10px) rotate(-6deg)}100%{transform:translate(-3px,-2px) rotate(12deg)}}
-.asas{transform-origin:center;animation:bate .16s ease-in-out infinite alternate}
-@keyframes bate{to{transform:scaleX(.18)}}
 @media (max-width:700px){
   .hero{padding:12px 0 28px;background-position:center bottom}
   .hero .escola{font-size:10px;letter-spacing:.04em}
   .hero h1{font-size:26px;margin:2px 0 8px}
-  .palco{height:168px}
+  .palco{height:130px}
   .aviao{width:300px;top:2px}
-  .corrida{width:118px;bottom:2px}
   .nav{display:flex;gap:2px}
   .nav a{flex:1;padding:8px 6px;font-size:14px}
 }
-@media (min-width:701px){.palco{height:210px}}
+@media (min-width:701px){.palco{height:180px}}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 
 main{margin-top:-22px;position:relative;padding-bottom:48px}
@@ -375,40 +351,6 @@ body.modal-aberto{overflow:hidden}
 <ellipse cx="9" cy="40.5" rx="2.4" ry="17" fill="#12343B" opacity=".14"/>
 <g class="helice"><rect x="7.4" y="23.5" width="3.2" height="34" rx="1.6" fill="#12343B"/></g>
 </svg></div>
-<div class="corrida"><div class="vira"><svg viewBox="0 0 130 100" focusable="false">
-<ellipse class="sombra" cx="38" cy="95" rx="17" ry="3.4" fill="#0B4F5C" opacity=".2"/>
-<g class="menina">
-<g class="rabo"><path d="M27 18 C15 15 9 24 11 36 C13 31 17 28 21 27 C18 32 18 37 20 41 C22 33 25 28 29 26 Z" fill="#3B2416"/></g>
-<g class="braco-t"><path d="M33 43 L25 57" stroke="#9A6440" stroke-width="5" stroke-linecap="round"/></g>
-<g class="perna p2"><path d="M35 65 L35 86" stroke="#9A6440" stroke-width="5.5" stroke-linecap="round"/><path d="M32 85 h9 q3.5 0 3.5 3.5 q0 2 -2 2 h-10.5z" fill="#0B4F5C"/></g>
-<g class="perna p1"><path d="M41 65 L41 86" stroke="#B97A50" stroke-width="5.5" stroke-linecap="round"/><path d="M38 85 h9 q3.5 0 3.5 3.5 q0 2 -2 2 h-10.5z" fill="#D81F5A"/></g>
-<path d="M30 39 Q38 35 47 39 L55 67 Q38 72 21 67 Z" fill="#FFB81C"/>
-<path d="M41 37.6 Q45 38 47 39 L55 67 Q49 69.5 43 70 Z" fill="#F29A00"/>
-<path d="M21 67 Q38 72 55 67 L55.6 69 Q38 74.5 20.4 69 Z" fill="#D81F5A"/>
-<circle cx="31" cy="52" r="1.6" fill="#fff" opacity=".8"/><circle cx="39" cy="58" r="1.6" fill="#fff" opacity=".8"/><circle cx="35" cy="46" r="1.6" fill="#fff" opacity=".8"/><circle cx="46" cy="52" r="1.6" fill="#fff" opacity=".6"/>
-<path d="M32.5 39.5 Q38.5 44 44.5 39.5" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
-<rect x="35.5" y="32" width="5.5" height="7" rx="2" fill="#B97A50"/>
-<circle cx="39" cy="25" r="10.8" fill="#B97A50"/>
-<path d="M28.3 26 C27 13 40 9.5 47.5 15.5 C49.4 17.2 50 19.5 49.6 21 C43 20 36.5 18.5 32.5 24 L31 31 Q28.6 29 28.3 26Z" fill="#3B2416"/>
-<path d="M27 15 L22 10 L21.5 19Z M27 15 L31 9 L33 17Z" fill="#D81F5A"/><circle cx="27.5" cy="15" r="2.2" fill="#B0173F"/>
-<circle cx="44.2" cy="25" r="1.5" fill="#1B1B1B"/>
-<circle cx="44.6" cy="29.6" r="2.2" fill="#F28AA8" opacity=".7"/>
-<path d="M42.6 31.6 q2.6 1.8 5 -0.4" stroke="#5A2E1E" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-<g class="braco-f"><path d="M43 43 L55 33" stroke="#B97A50" stroke-width="5" stroke-linecap="round"/><circle cx="56" cy="32" r="3.1" fill="#B97A50"/></g>
-</g>
-<g transform="translate(96 22)"><g class="borb">
-<path d="M0 -6 Q-3 -13 -6 -14 M0 -6 Q3 -13 6 -14" stroke="#12343B" stroke-width="1.1" fill="none" stroke-linecap="round"/>
-<g class="asas">
-<path d="M0 0 C-6 -14 -20 -16 -18 -4 C-17 1 -9 2 0 1Z" fill="#0798D7"/>
-<path d="M0 0 C6 -14 20 -16 18 -4 C17 1 9 2 0 1Z" fill="#0798D7"/>
-<path d="M0 1 C-6 3 -15 6 -11 13 C-7 16 -2 9 0 4Z" fill="#5BC0F0"/>
-<path d="M0 1 C6 3 15 6 11 13 C7 16 2 9 0 4Z" fill="#5BC0F0"/>
-<circle cx="-11" cy="-6" r="2.6" fill="#FFB81C"/><circle cx="11" cy="-6" r="2.6" fill="#FFB81C"/>
-<circle cx="-8" cy="9" r="1.6" fill="#fff"/><circle cx="8" cy="9" r="1.6" fill="#fff"/>
-</g>
-<ellipse cx="0" cy="2" rx="1.9" ry="8" fill="#12343B"/>
-</g></g>
-</svg></div></div>
   </div>
   <div class="wrap" style="position:relative;z-index:3">
     <nav class="nav">
