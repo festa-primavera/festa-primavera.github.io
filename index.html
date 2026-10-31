@@ -425,8 +425,8 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 <div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Copiar comprovante</button></div>
 
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-2007";
-import { criarStore } from "./store.js?v=20261030-2007";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-2013";
+import { criarStore } from "./store.js?v=20261030-2013";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -654,10 +654,12 @@ function marcarMesa() {
   cont.hidden = !valido;
   if (valido) cont.textContent = `Continuar com ${n > 1 ? "as mesas " + listaMesas(selecionadas) : "a mesa " + selecionadas[0]} →`;
 }
+// Depois de escolher a mesa: se o vendedor ainda não se identificou, vai para a identificação;
+// se já se identificou, vai direto para o nome do comprador.
 function irParaFormulario() {
-  const f = $("#form-venda"), alvo = $("input[name=comprador]");
-  if (f.getBoundingClientRect().top < 0 || f.getBoundingClientRect().bottom > innerHeight) f.scrollIntoView({ behavior: "smooth", block: "start" });
-  setTimeout(() => alvo.focus({ preventScroll: true }), 350);
+  const destino = sessao ? $("input[name=comprador]") : $("#sessao");
+  destino.scrollIntoView({ behavior: "smooth", block: sessao ? "center" : "start" });
+  setTimeout(() => (sessao ? destino : $("#sel-vendedor")).focus({ preventScroll: true }), 400);
 }
 $("#mapa-vendas").addEventListener("click", (e) => {
   const b = e.target.closest("button.mesa"); if (!b || b.disabled) return;
