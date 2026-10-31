@@ -284,6 +284,20 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 .modal-acoes .btn-ghost{background:#fff;border-color:#fff}
 body.modal-aberto{overflow:hidden}
 /* comprovante-fim */
+/* avisos-ini */
+.modal-aviso{align-items:center;background:rgba(8,40,47,.72);backdrop-filter:blur(3px)}
+.aviso-card{background:var(--paper);border-radius:22px;width:100%;max-width:420px;padding:24px 20px 20px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3);animation:pop .3s ease;display:grid;gap:12px}
+.aviso-ico{width:56px;height:56px;margin:0 auto;border-radius:50%;display:grid;place-content:center;font-size:28px;background:var(--sun-soft)}
+.aviso-ico.ok{background:var(--leaf);color:var(--green-2);font-weight:800}
+.aviso-card h2{font-size:24px;color:var(--green)}
+.aviso-card p{margin:0;font-size:16px;line-height:1.45}
+.aviso-sub{font-size:14px;color:var(--muted);font-weight:700;margin-top:-6px}
+.aviso-destaque{background:var(--sun-soft);border:1.5px solid #FFE08A;border-radius:14px;padding:12px 14px;text-align:left}
+.aviso-dica{color:var(--muted);font-weight:700;font-size:14px!important}
+.aviso-pergunta{font-weight:800}
+.aviso-acoes{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
+.aviso-card .btn{width:100%}
+/* avisos-fim */
 /* layout-celular-ini */
 .mapa-card{align-self:start}
 .row-valor{display:grid}
@@ -567,6 +581,26 @@ body.modal-aberto{overflow:hidden}
 
 <footer>E.M. Dep. Federal Ulisses Guimarães · Festa da Primavera 2026</footer>
 <div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Ver comprovante</button></div>
+<div class="modal modal-aviso" id="modal-aviso" hidden role="alertdialog" aria-modal="true" aria-labelledby="aviso-tit">
+  <div class="aviso-card">
+    <div class="aviso-ico">📌</div>
+    <h2 id="aviso-tit">Aviso importante</h2>
+    <p>O <b>número da mesa</b> serve apenas para o <b>controle das vendas</b>. Ele não indica o lugar da mesa no salão.</p>
+    <p class="aviso-destaque">🚶 No dia da festa, as mesas serão ocupadas <b>por ordem de chegada</b>.</p>
+    <p class="aviso-dica">Explique isso ao comprador no momento da venda.</p>
+    <button type="button" class="btn btn-primary" id="aviso-ok">OK, entendi</button>
+  </div>
+</div>
+<div class="modal modal-aviso" id="modal-venda" hidden role="alertdialog" aria-modal="true" aria-labelledby="venda-tit">
+  <div class="aviso-card">
+    <div class="aviso-ico ok">✓</div>
+    <h2 id="venda-tit">Venda registrada!</h2>
+    <div class="aviso-sub" id="venda-sub"></div>
+    <p class="aviso-destaque">📌 <b>Lembre o comprador:</b> o número da mesa é só para controle. No dia da festa, as mesas serão ocupadas <b>por ordem de chegada</b>.</p>
+    <p class="aviso-pergunta">Deseja mostrar o comprovante na tela para o comprador tirar uma foto?</p>
+    <div class="aviso-acoes"><button type="button" class="btn btn-ghost" id="venda-nao">Agora não</button><button type="button" class="btn btn-primary" id="venda-sim">📷 Sim, mostrar</button></div>
+  </div>
+</div>
 <div class="modal" id="modal-comp" hidden role="dialog" aria-modal="true" aria-label="Comprovante da mesa">
   <div class="modal-box">
     <img id="comp-img" alt="Comprovante da mesa">
@@ -763,7 +797,9 @@ Comprador: ${v.comprador}
 Aluno: ${v.aluno} (${v.serie} ${v.turma})
 Pagamento: ${v.pagamento} — ${brl(v.total ?? v.valor)}
 Vendedor(a): ${v.vendedor}${valida(v.criadoEm) ? `
-Data da compra: ${new Date(v.criadoEm).toLocaleDateString("pt-BR", { timeZone: "America/Manaus" })} às ${new Date(v.criadoEm).toLocaleTimeString("pt-BR", { timeZone: "America/Manaus", hour: "2-digit", minute: "2-digit" })}` : ""}`;
+Data da compra: ${new Date(v.criadoEm).toLocaleDateString("pt-BR", { timeZone: "America/Manaus" })} às ${new Date(v.criadoEm).toLocaleTimeString("pt-BR", { timeZone: "America/Manaus", hour: "2-digit", minute: "2-digit" })}` : ""}
+
+📌 O número da mesa é só para controle das vendas. No dia da festa, as mesas são ocupadas por ordem de chegada.`;
 };
 // Todas as mesas compradas pelo mesmo comprador para o mesmo aluno
 const grupoDe = (v) => vendas.filter((x) => x.comprador === v.comprador && x.aluno === v.aluno).sort((a, b) => a.mesa - b.mesa);
@@ -822,9 +858,12 @@ async function desenharComprovante(v) {
   x.strokeStyle = "#D5E7EA"; x.lineWidth = 4; x.setLineDash([16, 14]); x.beginPath(); x.moveTo(P + 10, yp); x.lineTo(W - P - 10, yp); x.stroke(); x.setLineDash([]);
   x.fillStyle = "#0B4F5C"; x.font = `800 30px ${SANS}`; x.textAlign = "center";
   x.fillText("Apresente este comprovante na recepção da festa.", W / 2, yp + 62);
-  x.fillStyle = "#5A7479"; x.font = `700 24px ${SANS}`; x.fillText("festa-primavera.github.io", W / 2, yp + 104); x.textAlign = "left";
+  x.fillStyle = "#5A7479"; x.font = `700 25px ${SANS}`;
+  x.fillText("O número da mesa é só para controle das vendas.", W / 2, yp + 108);
+  x.fillText("As mesas são ocupadas por ordem de chegada.", W / 2, yp + 144);
+  x.font = `700 22px ${SANS}`; x.fillText("festa-primavera.github.io", W / 2, yp + 192); x.textAlign = "left";
   // monta a imagem final na altura exata
-  const H = yp + 190, fim = document.createElement("canvas"); fim.width = W; fim.height = H;
+  const H = yp + 270, fim = document.createElement("canvas"); fim.width = W; fim.height = H;
   const f = fim.getContext("2d");
   f.drawImage(c, 0, 0);
   f.fillStyle = "#F1F8FA"; f.fillRect(0, 430, W, H - 430);
@@ -841,6 +880,21 @@ async function abrirComprovante(v) {
   $("#modal-comp").hidden = false; document.body.classList.add("modal-aberto");
   $("#comp-fechar").focus({ preventScroll: true });
 }
+// ------------------------------------------------------------ avisos (ordem de chegada)
+function abrirAviso(id, foco) { $(id).hidden = false; document.body.classList.add("modal-aberto"); setTimeout(() => $(foco).focus({ preventScroll: true }), 50); }
+function fecharAviso(id) { $(id).hidden = true; if ($("#modal-comp").hidden) document.body.classList.remove("modal-aberto"); }
+$("#aviso-ok").addEventListener("click", () => { fecharAviso("#modal-aviso"); try { sessionStorage.setItem("fp-aviso", "1"); } catch {} });
+let vendaFeita = null;
+function avisarVenda(v) {
+  vendaFeita = v; const m = v.mesas || [v.mesa];
+  $("#venda-tit").textContent = m.length > 1 ? `Mesas ${listaMesas(m)} vendidas!` : `Mesa ${m[0]} vendida!`;
+  $("#venda-sub").textContent = `${v.comprador} · ${brl(v.total ?? v.valor)} · ${v.pagamento}`;
+  abrirAviso("#modal-venda", "#venda-sim");
+}
+$("#venda-sim").addEventListener("click", () => { fecharAviso("#modal-venda"); abrirComprovante(vendaFeita); });
+$("#venda-nao").addEventListener("click", () => { fecharAviso("#modal-venda"); toast("Venda salva. O comprovante fica na aba Recepção."); });
+let jaViuAviso = false; try { jaViuAviso = sessionStorage.getItem("fp-aviso") === "1"; } catch {}
+if (!jaViuAviso) abrirAviso("#modal-aviso", "#aviso-ok");
 function fecharComprovante() { $("#modal-comp").hidden = true; document.body.classList.remove("modal-aberto"); }
 $("#comp-fechar").addEventListener("click", fecharComprovante);
 $("#modal-comp").addEventListener("click", (e) => { if (e.target.id === "modal-comp") fecharComprovante(); });
@@ -1113,7 +1167,7 @@ $("#form-venda").addEventListener("submit", async (e) => {
     e.target.elements.serie.value = "";
     $$("#form-venda input[type=radio]").forEach((r) => (r.checked = false));
     e.target.elements.mesa.value = ""; selecionadas = []; renderResumo();
-    toast(v.mesas.length > 1 ? `Mesas ${listaMesas(v.mesas)} vendidas! 🌸` : `Mesa ${v.mesas[0]} vendida! 🌸`, { ...v, total: v.valor * v.mesas.length, criadoEm: new Date().toISOString() });
+    avisarVenda({ ...v, total: v.valor * v.mesas.length, criadoEm: new Date().toISOString() });
   } catch (err) {
     if (/PIN/i.test(err.message || "")) { sairSessao(err.message); erro.textContent = "Entre de novo com o seu PIN."; }
     else erro.textContent = err.message || "Não foi possível salvar. Verifique a internet.";
