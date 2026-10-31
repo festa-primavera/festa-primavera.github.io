@@ -111,7 +111,7 @@ input[readonly]{background:#F0ECF5}
 fieldset{border:0;padding:0;margin:0;display:grid;gap:6px}
 legend{font-weight:800;font-size:14px;padding:0;margin-bottom:6px}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
-.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg{position:relative}.seg input{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;opacity:0;pointer-events:none}
 .seg label{display:inline-flex;align-items:center;justify-content:center;min-width:48px;min-height:44px;padding:0 14px;border:1.5px solid var(--line);border-radius:12px;background:#FFFFFF;cursor:pointer;font-weight:800;font-size:15px}
 .seg input:checked+label{background:var(--green);border-color:var(--green);color:#fff}
 .seg input:focus-visible+label{box-shadow:0 0 0 4px var(--leaf)}
@@ -428,8 +428,8 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 <div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Copiar comprovante</button></div>
 
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-2027";
-import { criarStore } from "./store.js?v=20261030-2027";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-2030";
+import { criarStore } from "./store.js?v=20261030-2030";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
