@@ -1,5 +1,5 @@
 // Camada de dados: planilha do Google Drive (via Google Apps Script) ou modo demonstração
-import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261030-2110";
+import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261031-1940";
 
 export async function criarStore() {
   return APPS_SCRIPT_URL ? planilhaStore() : demoStore();
@@ -53,6 +53,8 @@ function planilhaStore() {
     prestacoes: async (pin) => (await enviar({ acao: "prestacoes", pin })).prestacoes || [],
     receber: async (r, pin) => (await enviar({ acao: "receber", ...r, pin })).prestacoes || [],
     estornar: async (id, pin) => (await enviar({ acao: "estornar", id, pin })).prestacoes || [],
+    // Cada vendedor vê só as próprias prestações (com o PIN dele)
+    minhas: async (vendedor, pin) => (await enviar({ acao: "minhas", vendedor, pin })).prestacoes || [],
   };
 }
 
@@ -87,6 +89,7 @@ function demoStore() {
     async cancelar(mesa) { gravar(ler().filter((x) => x.mesa !== mesa)); },
     async prestacoes() { return lerP(); },
     async receber(r) { const l = lerP(); l.push({ ...r, id: String(Date.now()), quando: new Date().toISOString() }); gravarP(l); return l; },
+    async minhas(nome) { return lerP().filter((p) => p.vendedor === nome); },
     async estornar(id) { const l = lerP().filter((p) => p.id !== id); gravarP(l); return l; },
     async chegada(mesas, chegou) {
       const lista = [].concat(mesas);

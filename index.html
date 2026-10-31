@@ -68,7 +68,7 @@ button,input,select{font:inherit}
   .palco{height:130px}
   .aviao{width:300px;top:2px}
   .nav{display:flex;gap:2px}
-  .nav a{flex:1;padding:8px 6px;font-size:14px}
+  .nav a{flex:1;padding:8px 4px;font-size:13.5px;white-space:nowrap}
 }
 @media (min-width:701px){.palco{height:180px}}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -264,6 +264,13 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 .hist{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;border-bottom:1px dashed var(--line);padding-bottom:8px}
 .hist b{font-size:14px}.hist .v{font-family:Fraunces,Georgia,serif;font-size:18px;color:var(--green-2);text-align:right}
 .hist span{font-size:12px;color:var(--muted);font-weight:600}
+.hist .n{display:inline-grid;place-content:center;min-width:26px;height:22px;border-radius:99px;background:var(--leaf);color:var(--green);font-size:12px;margin-right:6px;padding:0 6px}
+.hist-total{display:flex;justify-content:space-between;font-weight:800;padding-top:4px}
+.hist-total b{font-family:Fraunces,Georgia,serif;font-size:18px;color:var(--green-2)}
+.cv details{font-size:13px}
+.cv summary{cursor:pointer;font-weight:800;color:var(--green);padding:2px 0}
+.cv .mini{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding:5px 0;color:var(--muted);font-weight:700}
+.cv .mini b{color:var(--green-2)}
 @media (max-width:620px){.contas-resumo{grid-template-columns:1fr;gap:6px}.contas-resumo div{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.contas-resumo span{font-size:13px}.contas-resumo b{font-size:20px;white-space:nowrap}}
 /* contas-fim */
 /* comprovante-ini */
@@ -361,7 +368,7 @@ body.modal-aberto{overflow:hidden}
       <a href="#vendas" data-rota="vendas">Vender mesa</a>
       <a href="#mesas" data-rota="mesas">Resumo</a>
       <a href="#recepcao" data-rota="recepcao">Recepção</a>
-      <a href="#contas" data-rota="contas" id="aba-contas" hidden>Contas</a>
+      <a href="#contas" data-rota="contas" id="aba-contas">Contas</a>
     </nav>
   </div>
 </header>
@@ -489,14 +496,35 @@ body.modal-aberto{overflow:hidden}
   <section id="tela-contas" class="stack" hidden>
     <div class="card" id="contas-login">
       <div class="card-head"><h2>Prestação de contas</h2></div>
-      <div class="sub">Área exclusiva do recebedor do dinheiro.</div>
+      <div class="sub">Cada vendedor(a) vê aqui o que já prestou de contas e o que ainda falta.</div>
       <div class="sessao">
-        <div class="sessao-tit">🔒 <span data-nome-tesoureiro></span></div>
+        <div class="sessao-tit">🔒 Toque no seu nome e digite seu PIN</div>
+        <div class="nomes" id="lista-vend-contas" role="radiogroup" aria-label="Vendedor(a)"></div>
+        <input type="hidden" id="sel-vend-contas">
         <div class="sessao-campos">
-          <input id="pin-contas" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN do recebedor">
+          <input id="pin-contas" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN">
           <button type="button" class="btn btn-entrar" id="entrar-contas">Entrar</button>
         </div>
         <div class="erro" id="erro-contas" role="alert"></div>
+      </div>
+    </div>
+
+    <div id="minha-painel" class="stack" hidden>
+      <div class="card">
+        <div class="card-head"><h2>Minha prestação de contas</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
+        <div class="userbar-contas"><span>Vendedor(a): <b id="mc-nome"></b></span><button type="button" class="lnk" id="sair-minha">Sair</button></div>
+        <div class="contas-resumo">
+          <div><span>Total vendido</span><b id="mc-vendido">R$ 0,00</b></div>
+          <div><span>Já prestado</span><b id="mc-prestado" class="ok">R$ 0,00</b></div>
+          <div><span>Falta prestar</span><b id="mc-falta" class="pend">R$ 0,00</b></div>
+        </div>
+        <div class="barra"><i id="mc-barra"></i></div>
+        <div class="nota" id="mc-nota"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Prestações registradas</h2></div>
+        <div class="sub">Cada entrega fica registrada com data e horário.</div>
+        <div id="mc-hist" class="historico"></div>
       </div>
     </div>
 
@@ -554,8 +582,8 @@ body.modal-aberto{overflow:hidden}
 
 
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261030-2110";
-import { criarStore } from "./store.js?v=20261030-2110";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261031-1940";
+import { criarStore } from "./store.js?v=20261031-1940";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -580,8 +608,6 @@ function rota() {
   const r = { "#mesas": "mesas", "#recepcao": "recepcao", "#contas": "contas" }[location.hash] || "vendas";
   $("#tela-mesas").hidden = r !== "mesas";
   $("#tela-contas").hidden = r !== "contas";
-  // A aba Contas só aparece para o recebedor (ou para quem abrir o link #contas)
-  $("#aba-contas").hidden = !(r === "contas" || document.body.dataset.tesoureiro === "1");
   $("#tela-recepcao").hidden = r !== "recepcao";
   document.body.dataset.rota = r;
   if (r === "recepcao" && matchMedia("(min-width: 821px)").matches) setTimeout(() => $("#busca").focus(), 50);
@@ -617,11 +643,10 @@ function mostrarSessao() {
   $("#sessao-nome").textContent = sessao ? sessao.nome : "";
   $("#vendedor").value = sessao ? sessao.nome : "";
   document.body.dataset.tesoureiro = sessao && sessao.nome === TESOUREIRO ? "1" : "";
-  $("#aba-contas").hidden = !(document.body.dataset.rota === "contas" || document.body.dataset.tesoureiro === "1");
-  if (contasPronto) renderContas();
+  if (contasPronto) { renderContas(); carregarContas(); vigiarContas(); }
 }
 function sairSessao(msg) {
-  sessao = null; try { localStorage.removeItem("fp-sessao"); } catch {}
+  sessao = null; prestacoes = []; try { localStorage.removeItem("fp-sessao"); } catch {}
   $("#pin").value = ""; escolherNome(""); mostrarSessao();
   if (msg) $("#erro-sessao").textContent = msg;
 }
@@ -875,6 +900,32 @@ contasPronto = true;
 $$("[data-nome-tesoureiro]").forEach((e) => (e.textContent = TESOUREIRO));
 $("#seg-rec-forma").innerHTML = PAGAMENTOS.map((p, i) => `<input type="radio" name="rec-forma" id="rf${i}" value="${p}"${i === 0 ? " checked" : ""}><label for="rf${i}">${p === "PIX" ? "⚡ PIX" : "💵 Dinheiro"}</label>`).join("");
 const ehTesoureiro = () => !!sessao && sessao.nome === TESOUREIRO;
+$("#lista-vend-contas").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(v)}</button>`).join("");
+$("#lista-vend-contas").addEventListener("click", (e) => {
+  const b = e.target.closest(".nome-btn"); if (!b) return;
+  $("#sel-vend-contas").value = b.dataset.nome;
+  $$("#lista-vend-contas .nome-btn").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+  $("#erro-contas").textContent = ""; $("#pin-contas").focus();
+});
+const ordemPrest = (l) => [...l].sort((a, b) => new Date(a.quando) - new Date(b.quando));
+function renderMinha() {
+  const nome = sessao.nome, minhas = vendas.filter((v) => v.vendedor === nome);
+  const din = minhas.filter((v) => v.pagamento === "Dinheiro").reduce((s, v) => s + (+v.valor || 0), 0);
+  const pix = minhas.filter((v) => v.pagamento === "PIX").reduce((s, v) => s + (+v.valor || 0), 0);
+  const ps = ordemPrest(prestacoes.filter((p) => p.vendedor === nome));
+  const vendido = din + pix, prest = ps.reduce((s, p) => s + (+p.valor || 0), 0), falta = Math.round((vendido - prest) * 100) / 100;
+  $("#mc-nome").textContent = nome;
+  $("#mc-vendido").textContent = brl(vendido); $("#mc-prestado").textContent = brl(prest); $("#mc-falta").textContent = brl(Math.max(0, falta));
+  $("#mc-barra").style.width = (vendido ? Math.min(100, (prest / vendido) * 100) : 0) + "%";
+  $("#mc-nota").innerHTML = `${minhas.length} mesa${minhas.length === 1 ? "" : "s"} vendida${minhas.length === 1 ? "" : "s"} · 💵 ${brl(din)} · ⚡ ${brl(pix)}<br>` +
+    (vendido === 0 ? "Você ainda não tem vendas." : falta <= 0 ? "✅ Contas acertadas com " + esc(TESOUREIRO) + "."
+      : `Entregue <b>${brl(falta)}</b> a ${esc(TESOUREIRO)}. Ele registra cada entrega e ela aparece aqui.`);
+  $("#mc-hist").innerHTML = ps.length ? ps.map((p, i) => `<div class="hist">
+      <b><span class="n">${i + 1}ª</span>${esc(p.forma)}</b><div class="v">${brl(p.valor)}</div>
+      <span>📅 ${valida(p.quando) ? new Date(p.quando).toLocaleDateString("pt-BR", TZ) + " às " + hora(p.quando) : ""}${p.obs ? " · " + esc(p.obs) : ""}</span>
+    </div>`).join("") + `<div class="hist-total"><span>Total prestado</span><b>${brl(prest)}</b></div>`
+    : `<div class="vazio">Nenhuma prestação de contas registrada ainda.</div>`;
+}
 function contasPorVendedor() {
   return VENDEDORES.filter((n) => n !== TESOUREIRO).map((nome) => {
     const minhas = vendas.filter((v) => v.vendedor === nome);
@@ -886,7 +937,9 @@ function contasPorVendedor() {
 }
 function renderContas() {
   const logado = ehTesoureiro();
-  $("#contas-login").hidden = logado; $("#contas-painel").hidden = !logado;
+  $("#contas-login").hidden = !!sessao; $("#contas-painel").hidden = !logado;
+  $("#minha-painel").hidden = !sessao || logado;
+  if (sessao && !logado) return renderMinha();
   if (!logado) return;
   const l = contasPorVendedor();
   const tot = l.reduce((s, x) => s + x.vendido, 0), rec = l.reduce((s, x) => s + x.rec, 0);
@@ -898,12 +951,14 @@ function renderContas() {
   $("[data-c-proprio]").textContent = proprias.length
     ? `Suas próprias vendas (${proprias.length} mesa${proprias.length > 1 ? "s" : ""} · ${brl(proprias.reduce((s, v) => s + (+v.valor || 0), 0))}) já estão com você e não entram na prestação.`
     : "Suas próprias vendas não entram na prestação de contas.";
+  const abertos = new Set($$("#contas-vendedores details[open]").map((d) => d.dataset.cv));
   $("#contas-vendedores").innerHTML = l.map((x) => {
     const i = VENDEDORES.indexOf(x.nome);
     return `<div class="cv${x.vendido > 0 && x.pend <= 0 ? " quitado" : ""}">
       <div class="cv-top"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(x.nome))}</span><b>${esc(x.nome)}</b></div>
       <div class="cv-num"><div>Vendeu<b>${brl(x.vendido)}</b></div><div class="ok">Entregou<b>${brl(x.rec)}</b></div><div class="pend">Falta<b>${brl(Math.max(0, x.pend))}</b></div></div>
       <div class="cv-split">${x.mesas} mesa${x.mesas === 1 ? "" : "s"} · 💵 ${brl(x.din)} · ⚡ ${brl(x.pix)}${x.pend < 0 ? ` · ⚠️ recebido ${brl(-x.pend)} a mais (venda cancelada?)` : ""}</div>
+      ${((ps) => ps.length ? `<details data-cv="${esc(x.nome)}"${abertos.has(x.nome) ? " open" : ""}><summary>Ver ${ps.length} prestaç${ps.length === 1 ? "ão" : "ões"} (data e horário)</summary>${ps.map((p, k) => `<div class="mini"><span>${k + 1}ª · ${quando(p.quando)} · ${esc(p.forma)}</span><b>${brl(p.valor)}</b></div>`).join("")}</details>` : "")(ordemPrest(prestacoes.filter((p) => p.vendedor === x.nome)))}
       ${x.pend > 0 ? `<button type="button" class="btn btn-receber" data-receber="${esc(x.nome)}">Registrar recebimento</button>`
         : x.vendido > 0 ? `<div class="selo-ok">✓ Contas acertadas</div>` : ""}
     </div>`;
@@ -915,29 +970,31 @@ function renderContas() {
     </div>`).join("") : `<div class="vazio">Nenhum recebimento registrado ainda.</div>`;
 }
 async function carregarContas() {
-  if (!ehTesoureiro()) return renderContas();
-  try { prestacoes = await store.prestacoes(sessao.pin); }
+  if (!sessao) return renderContas();
+  try { prestacoes = ehTesoureiro() ? await store.prestacoes(sessao.pin) : await store.minhas(sessao.nome, sessao.pin); }
   catch (e) { if (/PIN/i.test(e.message || "")) { sairSessao(); $("#erro-contas").textContent = e.message; } }
   renderContas();
 }
 function vigiarContas() {
   clearInterval(timerContas);
-  if (document.body.dataset.rota === "contas" && ehTesoureiro()) timerContas = setInterval(() => { if (!document.hidden) carregarContas(); }, 8000);
+  if (document.body.dataset.rota === "contas" && sessao) timerContas = setInterval(() => { if (!document.hidden) carregarContas(); }, 8000);
 }
 window.addEventListener("hashchange", () => { if (document.body.dataset.rota === "contas") carregarContas(); vigiarContas(); });
 $("#entrar-contas").addEventListener("click", async () => {
-  const pin = $("#pin-contas").value.trim(), er = $("#erro-contas"), bt = $("#entrar-contas");
-  er.textContent = ""; if (!pin) { er.textContent = "Digite seu PIN."; $("#pin-contas").focus(); return; }
+  const pin = $("#pin-contas").value.trim(), er = $("#erro-contas"), bt = $("#entrar-contas"), nome = $("#sel-vend-contas").value;
+  er.textContent = ""; if (!nome) { er.textContent = "Toque no seu nome."; return; }
+  if (!pin) { er.textContent = "Digite seu PIN."; $("#pin-contas").focus(); return; }
   bt.disabled = true; bt.textContent = "Conferindo…";
   try {
-    await store.entrar(TESOUREIRO, pin);
-    sessao = { nome: TESOUREIRO, pin }; try { localStorage.setItem("fp-sessao", JSON.stringify(sessao)); } catch {}
+    await store.entrar(nome, pin);
+    sessao = { nome, pin }; try { localStorage.setItem("fp-sessao", JSON.stringify(sessao)); } catch {}
     $("#pin-contas").value = ""; mostrarSessao(); await carregarContas(); vigiarContas();
   } catch (e) { er.textContent = e.message || "Não foi possível conferir o PIN."; }
   finally { bt.disabled = false; bt.textContent = "Entrar"; }
 });
 $("#pin-contas").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#entrar-contas").click(); } });
 $("#sair-contas").addEventListener("click", () => { sairSessao(); renderContas(); vigiarContas(); });
+$("#sair-minha").addEventListener("click", () => { sairSessao(); prestacoes = []; renderContas(); vigiarContas(); });
 $("#contas-vendedores").addEventListener("click", (e) => {
   const b = e.target.closest("[data-receber]"); if (!b) return;
   const x = contasPorVendedor().find((y) => y.nome === b.dataset.receber); if (!x) return;

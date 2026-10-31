@@ -139,6 +139,8 @@ function doPost(e) {
         if (alvo.indexOf(Number(col[i][0])) >= 0) { sh.getRange(i + 1, 10).setValue(d.chegou ? new Date() : ''); achou++; }
       }
       if (!achou) throw new Error('Mesa sem venda registrada.');
+    } else if (d.acao === 'minhas') {
+      autentica_(d.vendedor, d.pin); // cada vendedor vê só as próprias prestações
     } else if (d.acao === 'prestacoes') {
       autentica_(TESOUREIRO, d.pin);
     } else if (d.acao === 'receber') {
@@ -176,6 +178,7 @@ function doPost(e) {
     SpreadsheetApp.flush();
     const resp = { ok: true, vendas: lerVendas_() };
     if (['prestacoes', 'receber', 'estornar'].indexOf(d.acao) >= 0) resp.prestacoes = lerPrest_();
+    if (d.acao === 'minhas') resp.prestacoes = lerPrest_().filter(function (p) { return p.vendedor === d.vendedor; });
     return json_(resp);
   } catch (err) {
     return json_({ ok: false, erro: String(err && err.message || err) });
