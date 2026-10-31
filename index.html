@@ -419,7 +419,6 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
         </div>
       </details>
       <div id="lista" class="lista" aria-live="polite"></div>
-      <div class="acoes exportar"><button class="btn btn-ghost" id="copiar-excel" type="button">📋 Copiar para o Excel</button><button class="btn btn-ghost" id="csv" type="button">⬇️ Baixar planilha (CSV)</button></div>
     </div>
   </section>
 </main>
@@ -428,8 +427,8 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 <div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Copiar comprovante</button></div>
 
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-2030";
-import { criarStore } from "./store.js?v=20261030-2030";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-2040";
+import { criarStore } from "./store.js?v=20261030-2040";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -757,25 +756,7 @@ $("#lista").addEventListener("click", async (e) => {
   }
 });
 
-function tabela() {
-  const cab = ["Mesa", "Comprador", "Aluno", "Série", "Turma", "Pagamento", "Valor", "Vendedor", "Data/hora", "Chegada"];
-  return [cab, ...[...vendas].sort((a, b) => a.mesa - b.mesa).map((v) => [v.mesa, v.comprador, v.aluno, v.serie, v.turma, v.pagamento,
-    String(v.valor).replace(".", ","), v.vendedor, new Date(v.criadoEm).toLocaleString("pt-BR"), v.chegada ? new Date(v.chegada).toLocaleString("pt-BR") : ""])];
-}
-$("#copiar-excel").addEventListener("click", async () => {
-  const t = tabela().map((l) => l.join("\t")).join("\n");
-  try { await navigator.clipboard.writeText(t); toast("Tabela copiada — cole no Excel com Ctrl+V."); }
-  catch { toast("Não foi possível copiar. Tente baixar o CSV."); }
-});
-$("#csv").addEventListener("click", () => {
-  const cab = ["Mesa", "Comprador", "Aluno", "Série", "Turma", "Pagamento", "Valor", "Vendedor", "Data/hora", "Chegada"];
-  const linhas = [...vendas].sort((a, b) => a.mesa - b.mesa).map((v) => [v.mesa, v.comprador, v.aluno, v.serie, v.turma, v.pagamento,
-    String(v.valor).replace(".", ","), v.vendedor, new Date(v.criadoEm).toLocaleString("pt-BR"), v.chegada ? new Date(v.chegada).toLocaleString("pt-BR") : ""]);
-  const csv = "﻿" + [cab, ...linhas].map((l) => l.map((x) => `"${String(x ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n");
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  a.download = "vendas-mesas-festa-primavera.csv"; a.click();
-});
+
 </script>
 </body>
 </html>
