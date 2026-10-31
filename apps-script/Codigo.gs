@@ -13,7 +13,12 @@ const PAGAMENTOS = ['Dinheiro', 'PIX'];
 const TURMAS = ['A', 'B', 'C'];
 
 function aba_() {
-  return SpreadsheetApp.openById(PLANILHA_ID).getSheets()[0];
+  const ss = SpreadsheetApp.openById(PLANILHA_ID);
+  // Datas e horários sempre no horário de Manaus
+  if (ss.getSpreadsheetTimeZone() !== 'America/Manaus') ss.setSpreadsheetTimeZone('America/Manaus');
+  const sh = ss.getSheets()[0];
+  sh.getRange('I:J').setNumberFormat('dd/MM/yyyy HH:mm:ss');
+  return sh;
 }
 
 function lerVendas_() {
