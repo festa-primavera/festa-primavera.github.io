@@ -246,8 +246,13 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 .sessao-on b::before{content:"✓ ";color:var(--green-2)}
 .sessao-rot{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:100%}
 .sessao-tit{font-weight:800;font-size:14px;margin-bottom:8px}
-.sessao-campos{display:grid;grid-template-columns:1fr 96px;gap:8px}
-.sessao-campos select{min-width:0}
+.nomes{display:grid;gap:6px;margin-bottom:10px}
+.nome-btn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--paper);border-radius:12px;padding:10px 12px;font-weight:800;font-size:14px;color:var(--ink);cursor:pointer;min-height:48px}
+.nome-btn .av{width:30px;height:30px;font-size:12px}
+.nome-btn[aria-checked="true"]{border-color:var(--green-2);background:#F3FAF5;box-shadow:0 0 0 3px var(--leaf)}
+.nome-btn[aria-checked="true"]::after{content:"✓";margin-left:auto;color:var(--green-2);font-size:18px}
+.sessao-campos{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sessao-campos .btn-entrar{margin-top:0}
 #pin{text-align:center;letter-spacing:.3em;font-weight:800}
 .btn-entrar{width:100%;margin-top:8px;background:var(--green);color:#fff;min-height:44px}
 .btn-continuar{width:100%;margin-top:14px;background:var(--green-2);color:#fff;font-size:16px}
@@ -363,12 +368,13 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
                 <button type="button" class="lnk" id="sair-vend">Trocar</button>
               </div>
               <div class="sessao-off" id="sessao-off">
-                <div class="sessao-tit">🔒 Identifique-se para vender</div>
+                <div class="sessao-tit">🔒 Toque no seu nome e digite seu PIN</div>
+                <div class="nomes" id="lista-vend" role="radiogroup" aria-label="Vendedor(a)"></div>
+                <input type="hidden" id="sel-vendedor">
                 <div class="sessao-campos">
-                  <select id="sel-vendedor" aria-label="Vendedor(a)"></select>
                   <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN do vendedor">
+                  <button type="button" class="btn btn-entrar" id="entrar-vend">Entrar</button>
                 </div>
-                <button type="button" class="btn btn-entrar" id="entrar-vend">Entrar</button>
                 <div class="erro" id="erro-sessao" role="alert"></div>
               </div>
               <input type="hidden" name="vendedor" id="vendedor">
@@ -425,8 +431,8 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 <div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Copiar comprovante</button></div>
 
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-2013";
-import { criarStore } from "./store.js?v=20261030-2013";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-2016";
+import { criarStore } from "./store.js?v=20261030-2016";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -459,7 +465,16 @@ function rota() {
 window.addEventListener("hashchange", rota); rota();
 
 // ------------------------------------------------------------ formulário (opções)
-$("#sel-vendedor").innerHTML = `<option value="">Selecione…</option>` + VENDEDORES.map((v) => `<option>${esc(v)}</option>`).join("");
+$("#lista-vend").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(v)}</button>`).join("");
+function escolherNome(nome) {
+  $("#sel-vendedor").value = nome;
+  $$("#lista-vend .nome-btn").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.nome === nome)));
+}
+// Toque no nome → cursor vai direto para o PIN (abre o teclado numérico)
+$("#lista-vend").addEventListener("click", (e) => {
+  const b = e.target.closest(".nome-btn"); if (!b) return;
+  escolherNome(b.dataset.nome); $("#erro-sessao").textContent = ""; $("#pin").focus();
+});
 $("#sel-serie").innerHTML = `<option value="">Selecione…</option>` + SERIES.map((v) => `<option>${esc(v)}</option>`).join("");
 $("#seg-turma").innerHTML = TURMAS.map((t, i) => `<input type="radio" name="turma" id="t${i}" value="${t}"><label for="t${i}">${t}</label>`).join("");
 $("#seg-pag").innerHTML = PAGAMENTOS.map((p, i) => `<input type="radio" name="pagamento" id="p${i}" value="${p}"><label for="p${i}">${p === "PIX" ? "⚡ PIX" : "💵 Dinheiro"}</label>`).join("");
@@ -477,7 +492,7 @@ function mostrarSessao() {
 }
 function sairSessao(msg) {
   sessao = null; try { localStorage.removeItem("fp-sessao"); } catch {}
-  $("#pin").value = ""; $("#sel-vendedor").value = ""; mostrarSessao();
+  $("#pin").value = ""; escolherNome(""); mostrarSessao();
   if (msg) $("#erro-sessao").textContent = msg;
 }
 mostrarSessao();
@@ -608,12 +623,14 @@ window.addEventListener("online", () => status(true));
 $("#entrar-vend").addEventListener("click", async () => {
   const nome = $("#sel-vendedor").value, pin = $("#pin").value.trim(), er = $("#erro-sessao"), bt = $("#entrar-vend");
   er.textContent = "";
-  if (!nome || !pin) { er.textContent = "Escolha seu nome e digite seu PIN."; return; }
+  if (!nome) { er.textContent = "Toque no seu nome."; return; }
+  if (!pin) { er.textContent = "Digite seu PIN."; $("#pin").focus(); return; }
   bt.disabled = true; bt.textContent = "Conferindo…";
   try {
     await store.entrar(nome, pin);
     sessao = { nome, pin }; try { localStorage.setItem("fp-sessao", JSON.stringify(sessao)); } catch {}
     $("#pin").value = ""; mostrarSessao(); toast(`Olá, ${primeiroNome(nome)}! Vendas serão registradas no seu nome.`);
+    const c = $("input[name=comprador]"); c.scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(() => c.focus({ preventScroll: true }), 350);
   } catch (e) { er.textContent = e.message || "Não foi possível conferir o PIN."; }
   finally { bt.disabled = false; bt.textContent = "Entrar"; }
 });
@@ -659,7 +676,7 @@ function marcarMesa() {
 function irParaFormulario() {
   const destino = sessao ? $("input[name=comprador]") : $("#sessao");
   destino.scrollIntoView({ behavior: "smooth", block: sessao ? "center" : "start" });
-  setTimeout(() => (sessao ? destino : $("#sel-vendedor")).focus({ preventScroll: true }), 400);
+  setTimeout(() => (sessao ? destino : ($("#sel-vendedor").value ? $("#pin") : $("#lista-vend .nome-btn"))).focus({ preventScroll: true }), 400);
 }
 $("#mapa-vendas").addEventListener("click", (e) => {
   const b = e.target.closest("button.mesa"); if (!b || b.disabled) return;
