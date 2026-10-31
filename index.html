@@ -233,7 +233,7 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 /* recepcao-fim */
 /* layout-celular-ini */
 .mapa-card{align-self:start}
-.campo-mesas{display:grid;gap:6px;min-width:0}
+.row-valor{display:grid}
 .campo-mesas .rot{font-weight:800;font-size:14px}
 .mesas-escolhidas{min-height:48px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1.5px dashed var(--line);border-radius:12px;padding:6px 8px;background:var(--bg);color:var(--muted);font-weight:700;font-size:14px}
 .mesas-escolhidas.tem{border-style:solid;border-color:var(--green-2);background:#F3FAF5}
@@ -351,12 +351,8 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
         <div class="card">
           <div class="card-head"><h2>Nova venda</h2></div>
           <form id="form-venda" novalidate>
-            <div class="row fixa">
-              <div class="campo-mesas">
-                <span class="rot">Mesa(s)</span>
-                <div id="mesas-escolhidas" class="mesas-escolhidas" aria-live="polite"></div>
-                <input type="hidden" name="mesa" id="sel-mesa">
-              </div>
+            <div class="row-valor">
+              <input type="hidden" name="mesa" id="sel-mesa">
               <label><span id="rot-valor">Valor (R$)</span><input name="valor" id="valor" type="number" inputmode="decimal" min="0" step="0.01" required></label>
             </div>
             <div class="dica" id="dica-mesa" aria-live="polite">Toque em uma ou mais mesas no mapa.</div>
@@ -429,8 +425,8 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 <div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Copiar comprovante</button></div>
 
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-2005";
-import { criarStore } from "./store.js?v=20261030-2005";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-2007";
+import { criarStore } from "./store.js?v=20261030-2007";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -649,11 +645,6 @@ function marcarMesa() {
   });
   const n = selecionadas.length, total = VALOR_MESA * Math.max(n, 1);
   if (VALOR_MESA > 0) { $("#valor").value = brl(total); $("#rot-valor").textContent = n > 1 ? `Total (${n} mesas)` : "Valor (R$)"; }
-  const caixa = $("#mesas-escolhidas");
-  caixa.classList.toggle("tem", n > 0);
-  caixa.innerHTML = n
-    ? selecionadas.map((m) => `<button type="button" class="chip-mesa" data-tirar="${m}" aria-label="Tirar mesa ${m}">${m}<span>✕</span></button>`).join("")
-    : `<button type="button" class="btn-mapa" id="ir-mapa">Toque no mapa ↑</button>`;
   dica.classList.remove("ok", "ruim");
   const valido = n > 0 && !fora.length && !ja.length;
   if (!campo.value.trim()) dica.textContent = "Toque em uma ou mais mesas no mapa.";
@@ -675,11 +666,7 @@ $("#mapa-vendas").addEventListener("click", (e) => {
   $("#sel-mesa").value = l.join(", "); marcarMesa();
 });
 $("#continuar").addEventListener("click", irParaFormulario);
-$("#mesas-escolhidas").addEventListener("click", (e) => {
-  const t = e.target.closest("[data-tirar]");
-  if (t) { $("#sel-mesa").value = selecionadas.filter((x) => x !== Number(t.dataset.tirar)).join(", "); marcarMesa(); return; }
-  if (e.target.closest("#ir-mapa")) $("#mapa-vendas").scrollIntoView({ behavior: "smooth", block: "center" });
-});
+
 $("#mapa-publico").addEventListener("click", (e) => {
   const b = e.target.closest("button.mesa"); if (!b) return;
   location.hash = "#vendas"; $("#sel-mesa").value = b.dataset.m; marcarMesa(); irParaFormulario();
