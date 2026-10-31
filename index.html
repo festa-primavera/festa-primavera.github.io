@@ -260,6 +260,17 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 .hist span{font-size:12px;color:var(--muted);font-weight:600}
 @media (max-width:620px){.contas-resumo{grid-template-columns:1fr;gap:6px}.contas-resumo div{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.contas-resumo span{font-size:13px}.contas-resumo b{font-size:20px;white-space:nowrap}}
 /* contas-fim */
+/* comprovante-ini */
+.modal{position:fixed;inset:0;z-index:20;background:rgba(24,12,36,.94);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal[hidden]{display:none!important}
+.modal-box{width:100%;max-width:440px;display:grid;gap:12px}
+#comp-img{display:block;margin:0 auto;max-width:100%;width:auto;max-height:calc(100vh - 230px);height:auto;border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.35);background:#fff}
+.modal-dica{color:#fff;text-align:center;font-weight:700;font-size:14px;opacity:.9}
+.modal-acoes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modal-acoes #comp-share,.modal-acoes #comp-fechar{grid-column:1/-1}
+.modal-acoes .btn-ghost{background:#fff;border-color:#fff}
+body.modal-aberto{overflow:hidden}
+/* comprovante-fim */
 /* layout-celular-ini */
 .mapa-card{align-self:start}
 .row-valor{display:grid}
@@ -508,11 +519,24 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 </main>
 
 <footer>E.M. Dep. Federal Ulisses Guimarães · Festa da Primavera 2026</footer>
-<div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Copiar comprovante</button></div>
+<div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Ver comprovante</button></div>
+<div class="modal" id="modal-comp" hidden role="dialog" aria-modal="true" aria-label="Comprovante da mesa">
+  <div class="modal-box">
+    <img id="comp-img" alt="Comprovante da mesa">
+    <div class="modal-dica">Mostre a tela para o comprador fotografar, ou compartilhe a imagem.</div>
+    <div class="modal-acoes">
+      <button type="button" class="btn btn-primary" id="comp-share">📤 Compartilhar imagem</button>
+      <button type="button" class="btn btn-ghost" id="comp-wpp">WhatsApp</button>
+      <button type="button" class="btn btn-ghost" id="comp-copiar">Copiar texto</button>
+      <button type="button" class="btn btn-ghost" id="comp-fechar">Fechar</button>
+    </div>
+  </div>
+</div>
+
 
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261030-2100";
-import { criarStore } from "./store.js?v=20261030-2100";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261030-2110";
+import { criarStore } from "./store.js?v=20261030-2110";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -679,7 +703,7 @@ $("#seg-status").addEventListener("change", renderLista);
 let toastT;
 function toast(msg, comprovante) {
   $("#toast-txt").textContent = msg;
-  const b = $("#toast-btn"); b.hidden = !comprovante; b.onclick = () => copiar(comprovante);
+  const b = $("#toast-btn"); b.hidden = !comprovante; b.onclick = () => { $("#toast").classList.remove("on"); abrirComprovante(comprovante); };
   $("#toast").classList.add("on"); clearTimeout(toastT);
   toastT = setTimeout(() => $("#toast").classList.remove("on"), comprovante ? 7000 : 3500);
 }
@@ -699,11 +723,107 @@ Data da compra: ${new Date(v.criadoEm).toLocaleDateString("pt-BR", { timeZone: "
 };
 // Todas as mesas compradas pelo mesmo comprador para o mesmo aluno
 const grupoDe = (v) => vendas.filter((x) => x.comprador === v.comprador && x.aluno === v.aluno).sort((a, b) => a.mesa - b.mesa);
-async function copiar(v) {
-  const t = comprovanteTxt(v);
-  try { await navigator.clipboard.writeText(t); toast("Comprovante copiado — é só colar no WhatsApp."); }
-  catch { toast("Não foi possível copiar automaticamente. Use o botão Comprovante novamente."); }
+// ------------------------------------------------------------ comprovante em imagem
+let compAtual = null, compBlob = null;
+function quebrarTexto(ctx, txt, larg) {
+  const pal = String(txt).split(" "), linhas = []; let l = "";
+  for (const p of pal) { const t = l ? l + " " + p : p; if (ctx.measureText(t).width > larg && l) { linhas.push(l); l = p; } else l = t; }
+  if (l) linhas.push(l); return linhas;
 }
+async function desenharComprovante(v) {
+  try { await document.fonts.ready; } catch {}
+  const W = 1080, P = 70, m = v.mesas || [v.mesa];
+  const c = document.createElement("canvas"); c.width = W; c.height = 2400; // altura folgada; recorta no fim
+  let x = c.getContext("2d"); const SERIF = '"Fraunces", Georgia, serif', SANS = '"Nunito Sans", Arial, sans-serif';
+  // fundo
+  x.fillStyle = "#F7F5FA"; x.fillRect(0, 0, W, c.height);
+  // cabeçalho roxo
+  const g = x.createLinearGradient(0, 0, W, 420); g.addColorStop(0, "#5A2E80"); g.addColorStop(1, "#3D1E5A");
+  x.fillStyle = g; x.fillRect(0, 0, W, 430);
+  // flores decorativas
+  const flor = (cx, cy, r, cor) => { x.save(); x.translate(cx, cy); x.fillStyle = cor; for (let i = 0; i < 5; i++) { x.rotate(Math.PI * 2 / 5); x.beginPath(); x.ellipse(0, -r * .6, r * .42, r * .62, 0, 0, Math.PI * 2); x.fill(); } x.fillStyle = "#fff"; x.beginPath(); x.arc(0, 0, r * .28, 0, Math.PI * 2); x.fill(); x.restore(); };
+  [[960, 70, 46, "#FFD45C"], [1020, 170, 30, "#D9A6FF"], [880, 150, 26, "#F4B400"], [990, 300, 22, "#C77DFF"]].forEach((f) => flor(...f));
+  x.fillStyle = "rgba(255,255,255,.85)"; x.font = `800 26px ${SANS}`;
+  x.fillText("ESCOLA MUNICIPAL DEPUTADO FEDERAL ULISSES GUIMARÃES", P, 92);
+  x.font = `800 88px ${SERIF}`; x.fillStyle = "#fff"; x.fillText("Festa da", P, 200);
+  const wFesta = x.measureText("Festa da ").width; x.fillStyle = "#FFD45C"; x.fillText("Primavera", P + wFesta, 200);
+  x.fillStyle = "#fff"; x.font = `700 34px ${SANS}`; x.fillText("Quinta-feira, 05 de novembro de 2026", P, 268);
+  x.fillStyle = "rgba(255,255,255,.18)"; x.beginPath(); x.roundRect(P, 312, 430, 64, 32); x.fill();
+  x.fillStyle = "#fff"; x.font = `800 28px ${SANS}`; x.fillText("✓  COMPROVANTE DE MESA", P + 28, 354);
+  // cartão branco (desenhado no fim, por baixo, quando a altura já é conhecida)
+  const corpo = document.createElement("canvas"); corpo.width = W; corpo.height = 2400;
+  const xc = x; x = corpo.getContext("2d");
+  // número da mesa
+  const rotMesa = m.length > 1 ? "MESAS" : "MESA", numMesa = listaMesas(m);
+  x.fillStyle = "#F1E4FA"; x.beginPath(); x.roundRect(P + 20, 450, W - 2 * P - 40, 250, 28); x.fill();
+  x.textAlign = "center"; x.fillStyle = "#9B4DCA"; x.font = `800 34px ${SANS}`; x.fillText(rotMesa, W / 2, 510);
+  let tam = 170; x.font = `800 ${tam}px ${SERIF}`;
+  while (x.measureText(numMesa).width > W - 2 * P - 100 && tam > 60) { tam -= 10; x.font = `800 ${tam}px ${SERIF}`; }
+  x.fillText(numMesa, W / 2, 520 + tam * .95); x.textAlign = "left";
+  // dados
+  let y = 790;
+  const linha = (rot, val, cor = "#24182F") => {
+    x.fillStyle = "#6A5F74"; x.font = `800 26px ${SANS}`; x.fillText(rot.toUpperCase(), P + 30, y); y += 46;
+    x.fillStyle = cor; x.font = `800 40px ${SANS}`;
+    quebrarTexto(x, val, W - 2 * P - 60).forEach((l) => { x.fillText(l, P + 30, y); y += 50; }); y += 26;
+  };
+  linha("Comprador", v.comprador);
+  linha("Aluno", `${v.aluno} · ${v.serie} ${v.turma}`);
+  linha("Pagamento", `${v.pagamento} — ${brl(v.total ?? v.valor)}`, "#2F8F5B");
+  linha("Vendedor(a)", v.vendedor);
+  if (valida(v.criadoEm)) linha("Data da compra", new Date(v.criadoEm).toLocaleDateString("pt-BR", TZ) + " às " + hora(v.criadoEm));
+  // picote + rodapé
+  const yp = y + 10;
+  x.strokeStyle = "#E4DEEC"; x.lineWidth = 4; x.setLineDash([16, 14]); x.beginPath(); x.moveTo(P + 10, yp); x.lineTo(W - P - 10, yp); x.stroke(); x.setLineDash([]);
+  x.fillStyle = "#3D1E5A"; x.font = `800 30px ${SANS}`; x.textAlign = "center";
+  x.fillText("Apresente este comprovante na recepção da festa.", W / 2, yp + 62);
+  x.fillStyle = "#6A5F74"; x.font = `700 24px ${SANS}`; x.fillText("festa-primavera.github.io", W / 2, yp + 104); x.textAlign = "left";
+  // monta a imagem final na altura exata
+  const H = yp + 190, fim = document.createElement("canvas"); fim.width = W; fim.height = H;
+  const f = fim.getContext("2d");
+  f.drawImage(c, 0, 0);
+  f.fillStyle = "#F7F5FA"; f.fillRect(0, 430, W, H - 430);
+  f.fillStyle = "#fff"; f.shadowColor = "rgba(61,30,90,.18)"; f.shadowBlur = 40; f.shadowOffsetY = 12;
+  f.beginPath(); f.roundRect(P - 20, 400, W - 2 * (P - 20), H - 400 - 40, 36); f.fill(); f.shadowColor = "transparent";
+  f.drawImage(corpo, 0, 0);
+  return fim;
+}
+async function abrirComprovante(v) {
+  compAtual = v; compBlob = null;
+  const c = await desenharComprovante(v);
+  $("#comp-img").src = c.toDataURL("image/png");
+  c.toBlob((b) => (compBlob = b), "image/png");
+  $("#modal-comp").hidden = false; document.body.classList.add("modal-aberto");
+  $("#comp-fechar").focus({ preventScroll: true });
+}
+function fecharComprovante() { $("#modal-comp").hidden = true; document.body.classList.remove("modal-aberto"); }
+$("#comp-fechar").addEventListener("click", fecharComprovante);
+$("#modal-comp").addEventListener("click", (e) => { if (e.target.id === "modal-comp") fecharComprovante(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#modal-comp").hidden) fecharComprovante(); });
+$("#comp-share").addEventListener("click", async () => {
+  if (!compAtual) return;
+  const m = compAtual.mesas || [compAtual.mesa];
+  const blob = compBlob || await (await fetch($("#comp-img").src)).blob();
+  const nome = `comprovante-mesa-${m.join("-")}.png`;
+  const arq = new File([blob], nome, { type: "image/png" });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [arq] })) {
+      await navigator.share({ files: [arq], title: "Comprovante – Festa da Primavera 2026" });
+      return;
+    }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  // Sem compartilhamento nativo (ex.: computador): baixa a imagem
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+  toast("Imagem do comprovante salva.");
+});
+$("#comp-wpp").addEventListener("click", () => {
+  if (compAtual) window.open("https://wa.me/?text=" + encodeURIComponent(comprovanteTxt(compAtual)), "_blank", "noopener");
+});
+$("#comp-copiar").addEventListener("click", async () => {
+  if (!compAtual) return;
+  try { await navigator.clipboard.writeText(comprovanteTxt(compAtual)); toast("Texto copiado — é só colar no WhatsApp."); }
+  catch { toast("Não foi possível copiar o texto."); }
+});
 
 // ------------------------------------------------------------ dados
 const store = await criarStore();
@@ -916,7 +1036,7 @@ $("#form-venda").addEventListener("submit", async (e) => {
     e.target.elements.serie.value = "";
     $$("#form-venda input[type=radio]").forEach((r) => (r.checked = false));
     e.target.elements.mesa.value = ""; selecionadas = []; renderResumo();
-    toast(v.mesas.length > 1 ? `Mesas ${listaMesas(v.mesas)} vendidas! 🌸` : `Mesa ${v.mesas[0]} vendida! 🌸`, { ...v, total: v.valor * v.mesas.length });
+    toast(v.mesas.length > 1 ? `Mesas ${listaMesas(v.mesas)} vendidas! 🌸` : `Mesa ${v.mesas[0]} vendida! 🌸`, { ...v, total: v.valor * v.mesas.length, criadoEm: new Date().toISOString() });
   } catch (err) {
     if (/PIN/i.test(err.message || "")) { sairSessao(err.message); erro.textContent = "Entre de novo com o seu PIN."; }
     else erro.textContent = err.message || "Não foi possível salvar. Verifique a internet.";
@@ -937,7 +1057,7 @@ $("#lista").addEventListener("click", async (e) => {
   }
   if (c) {
     const v = vendas.find((x) => x.mesa === Number(c.dataset.copiar)); const g = grupoDe(v);
-    copiar({ ...v, mesas: g.map((x) => x.mesa), total: g.reduce((s, x) => s + (+x.valor || 0), 0) });
+    abrirComprovante({ ...v, mesas: g.map((x) => x.mesa), total: g.reduce((s, x) => s + (+x.valor || 0), 0) });
   }
   if (d) {
     const v = vendas.find((x) => x.mesa === Number(d.dataset.cancelar));
