@@ -26,6 +26,9 @@ export const VENDEDORES = [
   "CARLOS ANDRE ALONSO DA SILVA",
 ];
 
+// Quem recebe o dinheiro das vendas (prestação de contas). As vendas dele mesmo não entram.
+export const TESOUREIRO = "CARLOS ANDRE ALONSO DA SILVA";
+
 // 5) Séries e turmas
 export const SERIES = [
   "1º Ano", "2º Ano", "3º Ano", "4º Ano", "5º Ano",

@@ -70,6 +70,29 @@ function autentica_(nome, pin) {
     throw new Error('PIN incorreto para ' + (nome || 'o vendedor') + '.');
 }
 
+// ---- Prestação de contas: quem recebe o dinheiro dos outros vendedores
+const TESOUREIRO = 'CARLOS ANDRE ALONSO DA SILVA';
+
+function abaPrest_() {
+  const ss = SpreadsheetApp.openById(PLANILHA_ID);
+  let sh = ss.getSheetByName('Prestações');
+  if (!sh) {
+    sh = ss.insertSheet('Prestações', ss.getNumSheets()); // sempre no fim: a aba de vendas continua sendo a primeira
+    sh.appendRow(['ID', 'Data/hora', 'Vendedor', 'Valor', 'Forma', 'Observação', 'Recebido por']);
+  }
+  sh.getRange('B:B').setNumberFormat('dd/MM/yyyy HH:mm:ss');
+  return sh;
+}
+
+function lerPrest_() {
+  const v = abaPrest_().getDataRange().getValues();
+  v.shift();
+  return v.filter(function (r) { return r[0] !== ''; }).map(function (r) {
+    return { id: String(r[0]), quando: iso_(r[1]), vendedor: String(r[2]), valor: Number(r[3]) || 0,
+      forma: String(r[4]), obs: String(r[5]), recebidoPor: String(r[6]) };
+  });
+}
+
 function doGet() {
   return json_({ ok: true, vendas: lerVendas_() });
 }
@@ -116,6 +139,28 @@ function doPost(e) {
         if (alvo.indexOf(Number(col[i][0])) >= 0) { sh.getRange(i + 1, 10).setValue(d.chegou ? new Date() : ''); achou++; }
       }
       if (!achou) throw new Error('Mesa sem venda registrada.');
+    } else if (d.acao === 'prestacoes') {
+      autentica_(TESOUREIRO, d.pin);
+    } else if (d.acao === 'receber') {
+      autentica_(TESOUREIRO, d.pin);
+      const nome = String(d.vendedor || '');
+      if (nome === TESOUREIRO || !PIN_HASH[nome]) throw new Error('Vendedor inválido.');
+      const valor = Math.round(Number(d.valor) * 100) / 100;
+      if (!(valor > 0)) throw new Error('Informe o valor recebido.');
+      if (PAGAMENTOS.indexOf(d.forma) < 0) throw new Error('Forma inválida.');
+      const vendido = vendas.filter(function (x) { return x.vendedor === nome; })
+        .reduce(function (s, x) { return s + x.valor; }, 0);
+      const recebido = lerPrest_().filter(function (p) { return p.vendedor === nome; })
+        .reduce(function (s, p) { return s + p.valor; }, 0);
+      const pend = Math.round((vendido - recebido) * 100) / 100;
+      if (valor > pend + 0.001) throw new Error('O valor passa do pendente de ' + nome + ' (R$ ' + pend.toFixed(2).replace('.', ',') + ').');
+      abaPrest_().appendRow([Utilities.getUuid(), new Date(), nome, valor, d.forma, texto_(d.obs), TESOUREIRO]);
+    } else if (d.acao === 'estornar') {
+      autentica_(TESOUREIRO, d.pin);
+      const sp = abaPrest_(), ids = sp.getRange(1, 1, sp.getLastRow(), 1).getValues();
+      for (let i = ids.length - 1; i >= 1; i--) {
+        if (String(ids[i][0]) === String(d.id)) { sp.deleteRow(i + 1); break; }
+      }
     } else if (d.acao === 'cancelar') {
       const mesa = Number(d.mesa);
       const venda = vendas.filter(function (x) { return x.mesa === mesa; })[0];
@@ -129,7 +174,9 @@ function doPost(e) {
       throw new Error('Ação desconhecida.');
     }
     SpreadsheetApp.flush();
-    return json_({ ok: true, vendas: lerVendas_() });
+    const resp = { ok: true, vendas: lerVendas_() };
+    if (['prestacoes', 'receber', 'estornar'].indexOf(d.acao) >= 0) resp.prestacoes = lerPrest_();
+    return json_(resp);
   } catch (err) {
     return json_({ ok: false, erro: String(err && err.message || err) });
   } finally {

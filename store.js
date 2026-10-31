@@ -1,5 +1,5 @@
 // Camada de dados: planilha do Google Drive (via Google Apps Script) ou modo demonstração
-import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261030-2045";
+import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261030-2100";
 
 export async function criarStore() {
   return APPS_SCRIPT_URL ? planilhaStore() : demoStore();
@@ -32,6 +32,7 @@ function planilhaStore() {
     const d = await r.json();
     if (!d.ok) throw new Error(d.erro || "Não foi possível salvar.");
     publicar(d.vendas);
+    return d;
   }
   function iniciar() {
     if (timer) return;
@@ -48,6 +49,10 @@ function planilhaStore() {
     vender: (venda, pin) => enviar({ acao: "vender", venda, pin }),
     cancelar: (mesa, pin) => enviar({ acao: "cancelar", mesa, pin }),
     chegada: (mesas, chegou) => enviar({ acao: "chegada", mesas: [].concat(mesas), chegou }),
+    // Prestação de contas (só o recebedor, com o PIN dele)
+    prestacoes: async (pin) => (await enviar({ acao: "prestacoes", pin })).prestacoes || [],
+    receber: async (r, pin) => (await enviar({ acao: "receber", ...r, pin })).prestacoes || [],
+    estornar: async (id, pin) => (await enviar({ acao: "estornar", id, pin })).prestacoes || [],
   };
 }
 
@@ -57,6 +62,8 @@ function demoStore() {
   const ler = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
   const gravar = (l) => { try { localStorage.setItem(KEY, JSON.stringify(l)); } catch {} avisar(); };
   const ouvintesPub = new Set(), ouvintesVen = new Set();
+  const lerP = () => { try { return JSON.parse(localStorage.getItem(KEY + "-prest")) || []; } catch { return []; } };
+  const gravarP = (l) => { try { localStorage.setItem(KEY + "-prest", JSON.stringify(l)); } catch {} };
 
   function avisar() {
     const l = ler().map((v) => ({ ...v, criadoEm: new Date(v.criadoEm) }));
@@ -78,6 +85,9 @@ function demoStore() {
     },
     async entrar(nome, pin) { if (!/^\d{4,6}$/.test(pin)) throw new Error("PIN incorreto."); },
     async cancelar(mesa) { gravar(ler().filter((x) => x.mesa !== mesa)); },
+    async prestacoes() { return lerP(); },
+    async receber(r) { const l = lerP(); l.push({ ...r, id: String(Date.now()), quando: new Date().toISOString() }); gravarP(l); return l; },
+    async estornar(id) { const l = lerP().filter((p) => p.id !== id); gravarP(l); return l; },
     async chegada(mesas, chegou) {
       const lista = [].concat(mesas);
       gravar(ler().map((x) => lista.includes(x.mesa) ? { ...x, chegada: chegou ? new Date().toISOString() : "" } : x));

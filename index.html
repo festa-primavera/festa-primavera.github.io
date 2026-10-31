@@ -229,6 +229,37 @@ details.mais[open] summary{margin-bottom:8px}
 .exportar{margin-top:14px}
 mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 /* recepcao-fim */
+/* contas-ini */
+.userbar-contas{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted);font-weight:700;margin:-4px 0 12px}
+.userbar-contas b{color:var(--ink)}
+.contas-resumo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.contas-resumo div{background:var(--bg);border-radius:12px;padding:10px;display:grid;gap:2px;min-width:0}
+.contas-resumo span{font-size:12px;font-weight:700;color:var(--muted)}
+.contas-resumo b{font-family:Fraunces,Georgia,serif;font-size:20px;overflow-wrap:anywhere}
+.contas-resumo b.ok{color:var(--green-2)}.contas-resumo b.pend{color:var(--pink)}
+.nota{font-size:13px;color:var(--muted);font-weight:600;margin-top:10px}
+.contas-lista{display:grid;gap:10px}
+.cv{border:1.5px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:8px}
+.cv.quitado{border-color:var(--green-2);background:#F3FAF5}
+.cv-top{display:flex;align-items:center;gap:10px}
+.cv-top b{flex:1;min-width:0;font-size:14px;overflow-wrap:anywhere}
+.cv-num{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;font-size:12px;color:var(--muted);font-weight:700}
+.cv-num b{display:block;font-size:15px;color:var(--ink)}
+.cv-num .pend b{color:var(--pink)}.cv-num .ok b{color:var(--green-2)}
+.cv-split{font-size:12px;color:var(--muted);font-weight:700}
+.btn-receber{background:var(--green-2);color:#fff;min-height:44px}
+.selo-ok{font-weight:800;color:var(--green-2);text-align:center}
+#form-receber{display:grid;gap:12px}
+.receber-de{font-size:14px;color:var(--muted);font-weight:700}
+.receber-de b{color:var(--ink)}
+.atalhos{margin-top:-4px}
+.acoes-rec{display:grid;grid-template-columns:1fr 2fr;gap:8px}
+.historico{display:grid;gap:8px}
+.hist{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;border-bottom:1px dashed var(--line);padding-bottom:8px}
+.hist b{font-size:14px}.hist .v{font-family:Fraunces,Georgia,serif;font-size:18px;color:var(--green-2);text-align:right}
+.hist span{font-size:12px;color:var(--muted);font-weight:600}
+@media (max-width:620px){.contas-resumo{grid-template-columns:1fr;gap:6px}.contas-resumo div{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.contas-resumo span{font-size:13px}.contas-resumo b{font-size:20px;white-space:nowrap}}
+/* contas-fim */
 /* layout-celular-ini */
 .mapa-card{align-self:start}
 .row-valor{display:grid}
@@ -295,6 +326,7 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
       <a href="#vendas" data-rota="vendas">Vender mesa</a>
       <a href="#mesas" data-rota="mesas">Resumo</a>
       <a href="#recepcao" data-rota="recepcao">Recepção</a>
+      <a href="#contas" data-rota="contas" id="aba-contas" hidden>Contas</a>
     </nav>
   </div>
 <div class="cena" aria-hidden="true"><svg viewBox="0 0 1000 200" preserveAspectRatio="xMidYMax slice" focusable="false"><path d="M0 22 Q250 62 500 22 Q750 62 1000 22" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/><circle class="luz" style="animation-delay:-0.0s" cx="38.5" cy="32.7" r="4.5" fill="#FFD45C"/><circle class="luz" style="animation-delay:-0.4s" cx="76.9" cy="37.4" r="4.5" fill="#C77DFF"/><circle class="luz" style="animation-delay:-0.8s" cx="115.4" cy="41.2" r="4.5" fill="#7EE0A8"/><circle class="luz" style="animation-delay:-1.2s" cx="153.8" cy="44.0" r="4.5" fill="#FF9ECF"/><circle class="luz" style="animation-delay:-1.6s" cx="192.3" cy="45.9" r="4.5" fill="#FFD45C"/><circle class="luz" style="animation-delay:-0.0s" cx="230.8" cy="46.9" r="4.5" fill="#C77DFF"/><circle class="luz" style="animation-delay:-0.4s" cx="269.2" cy="46.9" r="4.5" fill="#7EE0A8"/><circle class="luz" style="animation-delay:-0.8s" cx="307.7" cy="45.9" r="4.5" fill="#FF9ECF"/><circle class="luz" style="animation-delay:-1.2s" cx="346.2" cy="44.0" r="4.5" fill="#FFD45C"/><circle class="luz" style="animation-delay:-1.6s" cx="384.6" cy="41.2" r="4.5" fill="#C77DFF"/><circle class="luz" style="animation-delay:-0.0s" cx="423.1" cy="37.4" r="4.5" fill="#7EE0A8"/><circle class="luz" style="animation-delay:-0.4s" cx="461.5" cy="32.7" r="4.5" fill="#FF9ECF"/><circle class="luz" style="animation-delay:-0.8s" cx="538.5" cy="32.7" r="4.5" fill="#FFD45C"/><circle class="luz" style="animation-delay:-1.2s" cx="576.9" cy="37.4" r="4.5" fill="#C77DFF"/><circle class="luz" style="animation-delay:-1.6s" cx="615.4" cy="41.2" r="4.5" fill="#7EE0A8"/><circle class="luz" style="animation-delay:-0.0s" cx="653.8" cy="44.0" r="4.5" fill="#FF9ECF"/><circle class="luz" style="animation-delay:-0.4s" cx="692.3" cy="45.9" r="4.5" fill="#FFD45C"/><circle class="luz" style="animation-delay:-0.8s" cx="730.8" cy="46.9" r="4.5" fill="#C77DFF"/><circle class="luz" style="animation-delay:-1.2s" cx="769.2" cy="46.9" r="4.5" fill="#7EE0A8"/><circle class="luz" style="animation-delay:-1.6s" cx="807.7" cy="45.9" r="4.5" fill="#FF9ECF"/><circle class="luz" style="animation-delay:-0.0s" cx="846.2" cy="44.0" r="4.5" fill="#FFD45C"/><circle class="luz" style="animation-delay:-0.4s" cx="884.6" cy="41.2" r="4.5" fill="#C77DFF"/><circle class="luz" style="animation-delay:-0.8s" cx="923.1" cy="37.4" r="4.5" fill="#7EE0A8"/><circle class="luz" style="animation-delay:-1.2s" cx="961.5" cy="32.7" r="4.5" fill="#FF9ECF"/><g class="escola" opacity=".95">
@@ -422,14 +454,65 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
       <div id="lista" class="lista" aria-live="polite"></div>
     </div>
   </section>
+
+  <!-- =============== PRESTAÇÃO DE CONTAS (só o recebedor) =============== -->
+  <section id="tela-contas" class="stack" hidden>
+    <div class="card" id="contas-login">
+      <div class="card-head"><h2>Prestação de contas</h2></div>
+      <div class="sub">Área exclusiva do recebedor do dinheiro.</div>
+      <div class="sessao">
+        <div class="sessao-tit">🔒 <span data-nome-tesoureiro></span></div>
+        <div class="sessao-campos">
+          <input id="pin-contas" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN do recebedor">
+          <button type="button" class="btn btn-entrar" id="entrar-contas">Entrar</button>
+        </div>
+        <div class="erro" id="erro-contas" role="alert"></div>
+      </div>
+    </div>
+
+    <div id="contas-painel" class="stack" hidden>
+      <div class="card">
+        <div class="card-head"><h2>Prestação de contas</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
+        <div class="userbar-contas"><span>Recebedor: <b data-nome-tesoureiro></b></span><button type="button" class="lnk" id="sair-contas">Sair</button></div>
+        <div class="contas-resumo">
+          <div><span>A receber dos vendedores</span><b data-c-total>R$ 0,00</b></div>
+          <div><span>Já recebido</span><b data-c-recebido class="ok">R$ 0,00</b></div>
+          <div><span>Pendente</span><b data-c-pendente class="pend">R$ 0,00</b></div>
+        </div>
+        <div class="barra"><i data-c-barra></i></div>
+        <div class="nota" data-c-proprio></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Por vendedor</h2></div>
+        <div class="contas-lista" id="contas-vendedores"></div>
+      </div>
+
+      <div class="card" id="form-receber" hidden>
+        <div class="card-head"><h2>Registrar recebimento</h2></div>
+        <div class="receber-de">De: <b id="rec-nome"></b> · pendente <b id="rec-pendente"></b></div>
+        <label>Valor recebido (R$)<input id="rec-valor" type="number" inputmode="decimal" min="0" step="0.01"></label>
+        <div class="atalhos"><button type="button" class="btn btn-ghost" id="rec-total">Receber o total</button></div>
+        <fieldset><legend>Forma</legend><div class="seg" id="seg-rec-forma"></div></fieldset>
+        <label>Observação <small>(opcional)</small><input id="rec-obs" maxlength="100" autocomplete="off" placeholder="Ex.: entregue em envelope"></label>
+        <div class="erro" id="erro-receber" role="alert"></div>
+        <div class="acoes-rec"><button type="button" class="btn btn-ghost" id="rec-cancelar">Cancelar</button><button type="button" class="btn btn-primary" id="rec-salvar">✔ Confirmar recebimento</button></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Recebimentos registrados</h2></div>
+        <div id="contas-historico" class="historico"></div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <footer>E.M. Dep. Federal Ulisses Guimarães · Festa da Primavera 2026</footer>
 <div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Copiar comprovante</button></div>
 
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-2045";
-import { criarStore } from "./store.js?v=20261030-2045";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261030-2100";
+import { criarStore } from "./store.js?v=20261030-2100";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -451,8 +534,11 @@ contador(); setInterval(contador, 60000);
 
 // ------------------------------------------------------------ rotas
 function rota() {
-  const r = { "#mesas": "mesas", "#recepcao": "recepcao" }[location.hash] || "vendas";
+  const r = { "#mesas": "mesas", "#recepcao": "recepcao", "#contas": "contas" }[location.hash] || "vendas";
   $("#tela-mesas").hidden = r !== "mesas";
+  $("#tela-contas").hidden = r !== "contas";
+  // A aba Contas só aparece para o recebedor (ou para quem abrir o link #contas)
+  $("#aba-contas").hidden = !(r === "contas" || document.body.dataset.tesoureiro === "1");
   $("#tela-recepcao").hidden = r !== "recepcao";
   document.body.dataset.rota = r;
   if (r === "recepcao" && matchMedia("(min-width: 821px)").matches) setTimeout(() => $("#busca").focus(), 50);
@@ -480,12 +566,16 @@ $("#filtro-pag").innerHTML += PAGAMENTOS.map((p) => `<option>${p}</option>`).joi
 if (VALOR_MESA > 0) { const c = $("#valor"); c.type = "text"; c.value = brl(VALOR_MESA); c.readOnly = true; c.tabIndex = -1; }
 // Sessão do vendedor: nome + PIN conferidos pelo script do Google; guardados só neste aparelho
 let sessao = null;
+let prestacoes = [], recebendo = null, timerContas = null, contasPronto = false;
 try { sessao = JSON.parse(localStorage.getItem("fp-sessao")) || null; } catch {}
 if (sessao && !VENDEDORES.includes(sessao.nome)) sessao = null;
 function mostrarSessao() {
   $("#sessao-on").hidden = !sessao; $("#sessao-off").hidden = !!sessao;
   $("#sessao-nome").textContent = sessao ? sessao.nome : "";
   $("#vendedor").value = sessao ? sessao.nome : "";
+  document.body.dataset.tesoureiro = sessao && sessao.nome === TESOUREIRO ? "1" : "";
+  $("#aba-contas").hidden = !(document.body.dataset.rota === "contas" || document.body.dataset.tesoureiro === "1");
+  if (contasPronto) renderContas();
 }
 function sairSessao(msg) {
   sessao = null; try { localStorage.removeItem("fp-sessao"); } catch {}
@@ -640,7 +730,110 @@ $("#entrar-vend").addEventListener("click", async () => {
 });
 $("#pin").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#entrar-vend").click(); } });
 
-store.onVendas((l) => { vendas = l; renderVendedores(); renderLista(); },
+// ------------------------------------------------------------ prestação de contas (só o recebedor)
+contasPronto = true;
+$$("[data-nome-tesoureiro]").forEach((e) => (e.textContent = TESOUREIRO));
+$("#seg-rec-forma").innerHTML = PAGAMENTOS.map((p, i) => `<input type="radio" name="rec-forma" id="rf${i}" value="${p}"${i === 0 ? " checked" : ""}><label for="rf${i}">${p === "PIX" ? "⚡ PIX" : "💵 Dinheiro"}</label>`).join("");
+const ehTesoureiro = () => !!sessao && sessao.nome === TESOUREIRO;
+function contasPorVendedor() {
+  return VENDEDORES.filter((n) => n !== TESOUREIRO).map((nome) => {
+    const minhas = vendas.filter((v) => v.vendedor === nome);
+    const din = minhas.filter((v) => v.pagamento === "Dinheiro").reduce((s, v) => s + (+v.valor || 0), 0);
+    const pix = minhas.filter((v) => v.pagamento === "PIX").reduce((s, v) => s + (+v.valor || 0), 0);
+    const rec = prestacoes.filter((p) => p.vendedor === nome).reduce((s, p) => s + (+p.valor || 0), 0);
+    return { nome, mesas: minhas.length, din, pix, vendido: din + pix, rec, pend: Math.round((din + pix - rec) * 100) / 100 };
+  });
+}
+function renderContas() {
+  const logado = ehTesoureiro();
+  $("#contas-login").hidden = logado; $("#contas-painel").hidden = !logado;
+  if (!logado) return;
+  const l = contasPorVendedor();
+  const tot = l.reduce((s, x) => s + x.vendido, 0), rec = l.reduce((s, x) => s + x.rec, 0);
+  $("[data-c-total]").textContent = brl(tot);
+  $("[data-c-recebido]").textContent = brl(rec);
+  $("[data-c-pendente]").textContent = brl(Math.max(0, tot - rec));
+  $("[data-c-barra]").style.width = (tot ? Math.min(100, (rec / tot) * 100) : 0) + "%";
+  const proprias = vendas.filter((v) => v.vendedor === TESOUREIRO);
+  $("[data-c-proprio]").textContent = proprias.length
+    ? `Suas próprias vendas (${proprias.length} mesa${proprias.length > 1 ? "s" : ""} · ${brl(proprias.reduce((s, v) => s + (+v.valor || 0), 0))}) já estão com você e não entram na prestação.`
+    : "Suas próprias vendas não entram na prestação de contas.";
+  $("#contas-vendedores").innerHTML = l.map((x) => {
+    const i = VENDEDORES.indexOf(x.nome);
+    return `<div class="cv${x.vendido > 0 && x.pend <= 0 ? " quitado" : ""}">
+      <div class="cv-top"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(x.nome))}</span><b>${esc(x.nome)}</b></div>
+      <div class="cv-num"><div>Vendeu<b>${brl(x.vendido)}</b></div><div class="ok">Entregou<b>${brl(x.rec)}</b></div><div class="pend">Falta<b>${brl(Math.max(0, x.pend))}</b></div></div>
+      <div class="cv-split">${x.mesas} mesa${x.mesas === 1 ? "" : "s"} · 💵 ${brl(x.din)} · ⚡ ${brl(x.pix)}${x.pend < 0 ? ` · ⚠️ recebido ${brl(-x.pend)} a mais (venda cancelada?)` : ""}</div>
+      ${x.pend > 0 ? `<button type="button" class="btn btn-receber" data-receber="${esc(x.nome)}">Registrar recebimento</button>`
+        : x.vendido > 0 ? `<div class="selo-ok">✓ Contas acertadas</div>` : ""}
+    </div>`;
+  }).join("");
+  const h = [...prestacoes].sort((a, b) => new Date(b.quando) - new Date(a.quando));
+  $("#contas-historico").innerHTML = h.length ? h.map((p) => `<div class="hist">
+      <b>${esc(primeiroNome(p.vendedor))} · ${esc(p.forma)}</b><div class="v">${brl(p.valor)}</div>
+      <span>${quando(p.quando)}${p.obs ? " · " + esc(p.obs) : ""}</span><button type="button" class="lnk del" data-estornar="${esc(p.id)}">Desfazer</button>
+    </div>`).join("") : `<div class="vazio">Nenhum recebimento registrado ainda.</div>`;
+}
+async function carregarContas() {
+  if (!ehTesoureiro()) return renderContas();
+  try { prestacoes = await store.prestacoes(sessao.pin); }
+  catch (e) { if (/PIN/i.test(e.message || "")) { sairSessao(); $("#erro-contas").textContent = e.message; } }
+  renderContas();
+}
+function vigiarContas() {
+  clearInterval(timerContas);
+  if (document.body.dataset.rota === "contas" && ehTesoureiro()) timerContas = setInterval(() => { if (!document.hidden) carregarContas(); }, 8000);
+}
+window.addEventListener("hashchange", () => { if (document.body.dataset.rota === "contas") carregarContas(); vigiarContas(); });
+$("#entrar-contas").addEventListener("click", async () => {
+  const pin = $("#pin-contas").value.trim(), er = $("#erro-contas"), bt = $("#entrar-contas");
+  er.textContent = ""; if (!pin) { er.textContent = "Digite seu PIN."; $("#pin-contas").focus(); return; }
+  bt.disabled = true; bt.textContent = "Conferindo…";
+  try {
+    await store.entrar(TESOUREIRO, pin);
+    sessao = { nome: TESOUREIRO, pin }; try { localStorage.setItem("fp-sessao", JSON.stringify(sessao)); } catch {}
+    $("#pin-contas").value = ""; mostrarSessao(); await carregarContas(); vigiarContas();
+  } catch (e) { er.textContent = e.message || "Não foi possível conferir o PIN."; }
+  finally { bt.disabled = false; bt.textContent = "Entrar"; }
+});
+$("#pin-contas").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#entrar-contas").click(); } });
+$("#sair-contas").addEventListener("click", () => { sairSessao(); renderContas(); vigiarContas(); });
+$("#contas-vendedores").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-receber]"); if (!b) return;
+  const x = contasPorVendedor().find((y) => y.nome === b.dataset.receber); if (!x) return;
+  recebendo = x;
+  $("#rec-nome").textContent = x.nome; $("#rec-pendente").textContent = brl(x.pend);
+  $("#rec-valor").value = x.pend.toFixed(2); $("#rec-obs").value = ""; $("#erro-receber").textContent = "";
+  $("#form-receber").hidden = false; $("#form-receber").scrollIntoView({ behavior: "smooth", block: "start" });
+  setTimeout(() => $("#rec-valor").focus({ preventScroll: true }), 350);
+});
+$("#rec-total").addEventListener("click", () => { if (recebendo) $("#rec-valor").value = recebendo.pend.toFixed(2); });
+$("#rec-cancelar").addEventListener("click", () => { recebendo = null; $("#form-receber").hidden = true; });
+$("#rec-salvar").addEventListener("click", async () => {
+  const er = $("#erro-receber"), bt = $("#rec-salvar"), valor = Math.round(Number($("#rec-valor").value) * 100) / 100;
+  if (!recebendo) return;
+  if (!(valor > 0)) { er.textContent = "Informe o valor recebido."; return; }
+  if (valor > recebendo.pend + 0.001) { er.textContent = `O valor passa do pendente (${brl(recebendo.pend)}).`; return; }
+  bt.disabled = true; bt.textContent = "Salvando…";
+  try {
+    prestacoes = await store.receber({ vendedor: recebendo.nome, valor, forma: ($("input[name=rec-forma]:checked") || {}).value || "Dinheiro", obs: $("#rec-obs").value.trim() }, sessao.pin);
+    toast(`Recebido ${brl(valor)} de ${primeiroNome(recebendo.nome)}.`);
+    recebendo = null; $("#form-receber").hidden = true; renderContas();
+  } catch (e) { er.textContent = e.message || "Não foi possível salvar."; }
+  finally { bt.disabled = false; bt.textContent = "✔ Confirmar recebimento"; }
+});
+$("#contas-historico").addEventListener("click", async (e) => {
+  const d = e.target.closest("[data-estornar]"); if (!d) return;
+  if (!d.classList.contains("confirma")) {
+    d.classList.add("confirma"); d.textContent = "Confirmar?";
+    setTimeout(() => { d.classList.remove("confirma"); d.textContent = "Desfazer"; }, 5000); return;
+  }
+  try { prestacoes = await store.estornar(d.dataset.estornar, sessao.pin); toast("Recebimento desfeito."); renderContas(); }
+  catch (err) { toast("Erro: " + err.message); }
+});
+carregarContas(); vigiarContas();
+
+store.onVendas((l) => { vendas = l; renderVendedores(); renderLista(); renderContas(); },
   (e) => toast("Não foi possível carregar as vendas: " + e.message));
 
 // Lê "8, 9" / "8 9" / "8-10" e devolve a lista de números
