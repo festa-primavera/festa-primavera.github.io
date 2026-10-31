@@ -233,6 +233,13 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 /* recepcao-fim */
 /* layout-celular-ini */
 .mapa-card{align-self:start}
+.campo-mesas{display:grid;gap:6px;min-width:0}
+.campo-mesas .rot{font-weight:800;font-size:14px}
+.mesas-escolhidas{min-height:48px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1.5px dashed var(--line);border-radius:12px;padding:6px 8px;background:var(--bg);color:var(--muted);font-weight:700;font-size:14px}
+.mesas-escolhidas.tem{border-style:solid;border-color:var(--green-2);background:#F3FAF5}
+.chip-mesa{background:var(--green-2);color:#fff;border:0;border-radius:10px;padding:6px 10px;font-weight:800;font-size:16px;cursor:pointer;line-height:1.1}
+.chip-mesa span{opacity:.8;font-size:13px;margin-left:4px}
+.btn-mapa{background:none;border:0;color:var(--green-2);font-weight:800;font-size:14px;cursor:pointer;padding:4px}
 .sessao{border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--bg)}
 .sessao-on{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .sessao-on b{flex:1;min-width:0;font-size:14px;overflow-wrap:anywhere}
@@ -345,10 +352,14 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
           <div class="card-head"><h2>Nova venda</h2></div>
           <form id="form-venda" novalidate>
             <div class="row fixa">
-              <label>Mesa(s) nº<input name="mesa" id="sel-mesa" type="text" inputmode="decimal" placeholder="Ex.: 8 ou 8, 9" autocomplete="off" required></label>
+              <div class="campo-mesas">
+                <span class="rot">Mesa(s)</span>
+                <div id="mesas-escolhidas" class="mesas-escolhidas" aria-live="polite"></div>
+                <input type="hidden" name="mesa" id="sel-mesa">
+              </div>
               <label><span id="rot-valor">Valor (R$)</span><input name="valor" id="valor" type="number" inputmode="decimal" min="0" step="0.01" required></label>
             </div>
-            <div class="dica" id="dica-mesa" aria-live="polite">Toque em uma ou mais mesas no mapa, ou digite os números.</div>
+            <div class="dica" id="dica-mesa" aria-live="polite">Toque em uma ou mais mesas no mapa.</div>
             <div class="sessao" id="sessao">
               <div class="sessao-on" id="sessao-on" hidden>
                 <span class="sessao-rot">Vendedor(a)</span>
@@ -418,8 +429,8 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 <div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Copiar comprovante</button></div>
 
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-1748";
-import { criarStore } from "./store.js?v=20261030-1748";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA } from "./config.js?v=20261030-2005";
+import { criarStore } from "./store.js?v=20261030-2005";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -638,9 +649,14 @@ function marcarMesa() {
   });
   const n = selecionadas.length, total = VALOR_MESA * Math.max(n, 1);
   if (VALOR_MESA > 0) { $("#valor").value = brl(total); $("#rot-valor").textContent = n > 1 ? `Total (${n} mesas)` : "Valor (R$)"; }
+  const caixa = $("#mesas-escolhidas");
+  caixa.classList.toggle("tem", n > 0);
+  caixa.innerHTML = n
+    ? selecionadas.map((m) => `<button type="button" class="chip-mesa" data-tirar="${m}" aria-label="Tirar mesa ${m}">${m}<span>✕</span></button>`).join("")
+    : `<button type="button" class="btn-mapa" id="ir-mapa">Toque no mapa ↑</button>`;
   dica.classList.remove("ok", "ruim");
   const valido = n > 0 && !fora.length && !ja.length;
-  if (!campo.value.trim()) dica.textContent = "Toque em uma ou mais mesas no mapa, ou digite os números.";
+  if (!campo.value.trim()) dica.textContent = "Toque em uma ou mais mesas no mapa.";
   else if (fora.length || !n) { dica.textContent = `Use números de 1 a ${TOTAL_MESAS}.`; dica.classList.add("ruim"); }
   else if (ja.length) { dica.textContent = `${ja.length > 1 ? "As mesas " + listaMesas(ja) + " já foram vendidas" : "A mesa " + ja[0] + " já foi vendida"}. Escolha outra.`; dica.classList.add("ruim"); }
   else { dica.textContent = n > 1 ? `${n} mesas: ${listaMesas(selecionadas)} ✓` : `Mesa ${selecionadas[0]} disponível ✓`; dica.classList.add("ok"); }
@@ -659,11 +675,16 @@ $("#mapa-vendas").addEventListener("click", (e) => {
   $("#sel-mesa").value = l.join(", "); marcarMesa();
 });
 $("#continuar").addEventListener("click", irParaFormulario);
+$("#mesas-escolhidas").addEventListener("click", (e) => {
+  const t = e.target.closest("[data-tirar]");
+  if (t) { $("#sel-mesa").value = selecionadas.filter((x) => x !== Number(t.dataset.tirar)).join(", "); marcarMesa(); return; }
+  if (e.target.closest("#ir-mapa")) $("#mapa-vendas").scrollIntoView({ behavior: "smooth", block: "center" });
+});
 $("#mapa-publico").addEventListener("click", (e) => {
   const b = e.target.closest("button.mesa"); if (!b) return;
   location.hash = "#vendas"; $("#sel-mesa").value = b.dataset.m; marcarMesa(); irParaFormulario();
 });
-$("#sel-mesa").addEventListener("input", marcarMesa);
+
 
 $("#form-venda").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -679,6 +700,7 @@ $("#form-venda").addEventListener("submit", async (e) => {
     [!v.comprador, "o nome do comprador"], [!v.aluno, "o nome do aluno"], [!v.serie, "a série"],
     [!v.turma, "a turma"], [!v.pagamento, "a forma de pagamento"],
   ].filter(([x]) => x).map(([, t]) => t);
+  if (!v.mesas.length) { erro.textContent = "Escolha a mesa tocando no número dela no mapa."; $("#mapa-vendas").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
   if (!sessao) { erro.textContent = "Identifique-se com seu nome e PIN antes de salvar."; $("#sessao").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
   if (faltando.length) { erro.textContent = "Preencha " + faltando.join(", ") + "."; return; }
   if (lerMesas($("#sel-mesa").value).some((m) => m < 1 || m > TOTAL_MESAS)) { erro.textContent = `As mesas vão de 1 a ${TOTAL_MESAS}.`; return; }
