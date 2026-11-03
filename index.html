@@ -348,7 +348,7 @@ body.modal-aberto{overflow:hidden}
     <div class="escola">Escola Municipal Deputado Federal Ulisses Guimarães</div>
     <h1><span class="sr">Festa da Primavera — </span>Controle de Venda de <em>Mesas</em></h1>
     <div class="chips">
-      <span class="chip">📅 <span class="longo">Quinta, 05 de novembro de 2026</span><span class="curto">Qui, 05/11</span></span>
+      <span class="chip">📅 <span class="longo">Quinta, 12 de novembro de 2026</span><span class="curto">Qui, 12/11</span></span>
       <span class="chip" id="contador">⏳ …</span>
     </div>
   </div>
@@ -392,7 +392,7 @@ body.modal-aberto{overflow:hidden}
   <section id="tela-mesas" class="stack" hidden>
     <div class="card esgotado" id="esgotado" role="status">
       <h2>🎉 Mesas esgotadas!</h2>
-      <p>Todas as mesas da Festa da Primavera foram vendidas. Obrigado a todos — nos vemos no dia 05/11!</p>
+      <p>Todas as mesas da Festa da Primavera foram vendidas. Obrigado a todos — nos vemos no dia 12/11!</p>
     </div>
     <div class="grid2">
       <div class="card">
@@ -616,8 +616,8 @@ body.modal-aberto{overflow:hidden}
 
 
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261031-1940";
-import { criarStore } from "./store.js?v=20261031-1940";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261103-1845";
+import { criarStore } from "./store.js?v=20261103-1845";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -790,7 +790,7 @@ const listaMesas = (l) => l.length < 2 ? String(l[0] ?? "") : l.slice(0, -1).joi
 const comprovanteTxt = (v) => {
   const m = v.mesas || [v.mesa];
   return `🌸 *Festa da Primavera 2026*
-E.M. Dep. Federal Ulisses Guimarães — 05/11/2026
+E.M. Dep. Federal Ulisses Guimarães — 12/11/2026
 
 ✅ ${m.length > 1 ? `Mesas nº *${listaMesas(m)}* garantidas!` : `Mesa nº *${m[0]}* garantida!`}
 Comprador: ${v.comprador}
@@ -828,7 +828,7 @@ async function desenharComprovante(v) {
   x.fillText("ESCOLA MUNICIPAL DEPUTADO FEDERAL ULISSES GUIMARÃES", P, 92);
   x.font = `800 88px ${SERIF}`; x.fillStyle = "#0B4F5C"; x.fillText("Festa da", P, 200);
   const wFesta = x.measureText("Festa da ").width; x.fillStyle = "#D81F5A"; x.fillText("Primavera", P + wFesta, 200);
-  x.fillStyle = "#0B4F5C"; x.font = `700 34px ${SANS}`; x.fillText("Quinta-feira, 05 de novembro de 2026", P, 268);
+  x.fillStyle = "#0B4F5C"; x.font = `700 34px ${SANS}`; x.fillText("Quinta-feira, 12 de novembro de 2026", P, 268);
   x.fillStyle = "#0B4F5C"; x.beginPath(); x.roundRect(P, 312, 430, 64, 32); x.fill();
   x.fillStyle = "#fff"; x.font = `800 28px ${SANS}`; x.fillText("✓  COMPROVANTE DE MESA", P + 28, 354);
   // cartão branco (desenhado no fim, por baixo, quando a altura já é conhecida)

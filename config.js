@@ -38,4 +38,4 @@ export const TURMAS = ["A", "B", "C"];
 export const PAGAMENTOS = ["Dinheiro", "PIX"];
 
 // 6) Data da festa (horário de Manaus)
-export const DATA_FESTA = "2026-11-05T00:00:00-04:00";
+export const DATA_FESTA = "2026-11-12T00:00:00-04:00";

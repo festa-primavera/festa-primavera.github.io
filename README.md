@@ -1,6 +1,6 @@
 # 🌸 Festa da Primavera 2026 — Controle de Mesas
 
-**E.M. Deputado Federal Ulisses Guimarães** · Festa em **05/11/2026**
+**E.M. Deputado Federal Ulisses Guimarães** · Festa em **12/11/2026**
 
 Página para controlar a venda das 50 mesas da festa. As vendas ficam salvas na planilha
 **FESTA DA PRIMAVERA 2026 - VENDAS DE MESAS** no Google Drive e aparecem para todos em poucos segundos.
