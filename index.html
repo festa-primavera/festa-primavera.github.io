@@ -68,7 +68,8 @@ button,input,select{font:inherit}
   .palco{height:130px}
   .aviao{width:300px;top:2px}
   .nav{display:flex;gap:2px}
-  .nav a{flex:1;padding:8px 4px;font-size:13.5px;white-space:nowrap}
+  .nav a{flex:1 1 auto;padding:8px 5px;font-size:12.5px;white-space:nowrap}
+  .nav{overflow-x:auto;scrollbar-width:none}.nav::-webkit-scrollbar{display:none}
 }
 @media (min-width:701px){.palco{height:180px}}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -380,7 +381,8 @@ body.modal-aberto{overflow:hidden}
   </div>
   <div class="wrap" style="position:relative;z-index:3">
     <nav class="nav">
-      <a href="#vendas" data-rota="vendas">Vender mesa</a>
+      <a href="#vendas" data-rota="vendas"><span class="longo">Vender mesa</span><span class="curto">Vender</span></a>
+      <a href="#minhas" data-rota="minhas"><span class="longo">Minhas vendas</span><span class="curto">Minhas vendas</span></a>
       <a href="#mesas" data-rota="mesas">Resumo</a>
       <a href="#recepcao" data-rota="recepcao">Recepção</a>
       <a href="#contas" data-rota="contas" id="aba-contas">Contas</a>
@@ -504,6 +506,41 @@ body.modal-aberto{overflow:hidden}
         </div>
       </details>
       <div id="lista" class="lista" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- =============== MINHAS VENDAS (cada vendedor) =============== -->
+  <section id="tela-minhas" class="stack" hidden>
+    <div class="card" id="mv-login">
+      <div class="card-head"><h2>Minhas vendas</h2></div>
+      <div class="sub">Veja o histórico das mesas que você vendeu e para quem.</div>
+      <div class="sessao">
+        <div class="sessao-tit">🔒 Toque no seu nome e digite seu PIN</div>
+        <div class="nomes" id="lista-vend-mv" role="radiogroup" aria-label="Vendedor(a)"></div>
+        <input type="hidden" id="sel-vend-mv">
+        <div class="sessao-campos">
+          <input id="pin-mv" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN">
+          <button type="button" class="btn btn-entrar" id="entrar-mv">Entrar</button>
+        </div>
+        <div class="erro" id="erro-mv" role="alert"></div>
+      </div>
+    </div>
+    <div id="mv-painel" class="stack" hidden>
+      <div class="card">
+        <div class="card-head"><h2>Minhas vendas</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
+        <div class="userbar-contas"><span>Vendedor(a): <b id="mv-nome"></b></span><button type="button" class="lnk" id="sair-mv">Sair</button></div>
+        <div class="contas-resumo">
+          <div><span>Mesas vendidas</span><b id="mv-mesas">0</b></div>
+          <div><span>Compradores</span><b id="mv-compradores">0</b></div>
+          <div><span>Total vendido</span><b id="mv-total" class="ok">R$ 0,00</b></div>
+        </div>
+        <div class="nota" id="mv-nota"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Histórico</h2></div>
+        <div class="ferr"><input id="mv-busca" type="search" placeholder="Buscar comprador, aluno ou mesa" autocomplete="off"></div>
+        <div id="mv-lista" class="lista"></div>
+      </div>
     </div>
   </section>
 
@@ -640,7 +677,8 @@ contador(); setInterval(contador, 60000);
 
 // ------------------------------------------------------------ rotas
 function rota() {
-  const r = { "#mesas": "mesas", "#recepcao": "recepcao", "#contas": "contas" }[location.hash] || "vendas";
+  const r = { "#mesas": "mesas", "#recepcao": "recepcao", "#contas": "contas", "#minhas": "minhas" }[location.hash] || "vendas";
+  $("#tela-minhas").hidden = r !== "minhas";
   $("#tela-mesas").hidden = r !== "mesas";
   $("#tela-contas").hidden = r !== "contas";
   $("#tela-recepcao").hidden = r !== "recepcao";
@@ -678,7 +716,7 @@ function mostrarSessao() {
   $("#sessao-nome").textContent = sessao ? sessao.nome : "";
   $("#vendedor").value = sessao ? sessao.nome : "";
   document.body.dataset.tesoureiro = sessao && sessao.nome === TESOUREIRO ? "1" : "";
-  if (contasPronto) { renderContas(); carregarContas(); vigiarContas(); }
+  if (contasPronto) { renderContas(); carregarContas(); vigiarContas(); renderMinhasVendas(); }
 }
 function sairSessao(msg) {
   sessao = null; prestacoes = []; try { localStorage.removeItem("fp-sessao"); } catch {}
@@ -1098,7 +1136,73 @@ $("#contas-historico").addEventListener("click", async (e) => {
 });
 carregarContas(); vigiarContas();
 
-store.onVendas((l) => { vendas = l; pintarMesas(); renderVendedores(); renderLista(); renderContas(); },
+// ------------------------------------------------------------ minhas vendas (cada vendedor)
+$("#lista-vend-mv").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(v)}</button>`).join("");
+$("#lista-vend-mv").addEventListener("click", (e) => {
+  const b = e.target.closest(".nome-btn"); if (!b) return;
+  $("#sel-vend-mv").value = b.dataset.nome;
+  $$("#lista-vend-mv .nome-btn").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+  $("#erro-mv").textContent = ""; $("#pin-mv").focus();
+});
+$("#entrar-mv").addEventListener("click", async () => {
+  const nome = $("#sel-vend-mv").value, pin = $("#pin-mv").value.trim(), er = $("#erro-mv"), bt = $("#entrar-mv");
+  er.textContent = ""; if (!nome) { er.textContent = "Toque no seu nome."; return; }
+  if (!pin) { er.textContent = "Digite seu PIN."; $("#pin-mv").focus(); return; }
+  bt.disabled = true; bt.textContent = "Conferindo…";
+  try {
+    await store.entrar(nome, pin);
+    sessao = { nome, pin }; try { localStorage.setItem("fp-sessao", JSON.stringify(sessao)); } catch {}
+    $("#pin-mv").value = ""; mostrarSessao();
+  } catch (e) { er.textContent = e.message || "Não foi possível conferir o PIN."; }
+  finally { bt.disabled = false; bt.textContent = "Entrar"; }
+});
+$("#pin-mv").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#entrar-mv").click(); } });
+$("#sair-mv").addEventListener("click", () => sairSessao());
+$("#mv-busca").addEventListener("input", () => renderMinhasVendas());
+function renderMinhasVendas() {
+  $("#mv-login").hidden = !!sessao; $("#mv-painel").hidden = !sessao;
+  if (!sessao) return;
+  const nome = sessao.nome, minhas = vendas.filter((v) => v.vendedor === nome);
+  // uma venda pode ter várias mesas: agrupa pelo comprador, aluno e momento da venda
+  const grupos = new Map();
+  minhas.forEach((v) => {
+    const k = [v.comprador, v.aluno, valida(v.criadoEm) ? new Date(v.criadoEm).toISOString().slice(0, 16) : ""].join("|");
+    if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(v);
+  });
+  let l = [...grupos.values()].map((g) => g.sort((a, b) => a.mesa - b.mesa))
+    .sort((a, b) => new Date(b[0].criadoEm) - new Date(a[0].criadoEm));
+  const din = minhas.filter((v) => v.pagamento === "Dinheiro").reduce((s, v) => s + (+v.valor || 0), 0);
+  const pix = minhas.filter((v) => v.pagamento === "PIX").reduce((s, v) => s + (+v.valor || 0), 0);
+  $("#mv-nome").textContent = nome;
+  $("#mv-mesas").textContent = minhas.length;
+  $("#mv-compradores").textContent = new Set(minhas.map((v) => v.comprador.trim().toUpperCase())).size;
+  $("#mv-total").textContent = brl(din + pix);
+  $("#mv-nota").textContent = minhas.length ? `💵 Dinheiro ${brl(din)} · ⚡ PIX ${brl(pix)}` : "";
+  const q = norm($("#mv-busca").value.trim());
+  if (q) l = l.filter((g) => /^\d+$/.test(q) ? g.some((x) => String(x.mesa) === q) : [g[0].comprador, g[0].aluno].some((x) => norm(x).includes(q)));
+  $("#mv-lista").innerHTML = l.length ? l.map((g) => {
+    const v = g[0], ms = g.map((x) => x.mesa), tot = g.reduce((s, x) => s + (+x.valor || 0), 0), cheg = g.filter((x) => x.chegada).length;
+    return `<article class="venda${cheg === g.length ? " chegou" : ""}">
+      <div class="vm">${ms.length > 1 ? "Mesas" : "Mesa"}<b style="text-transform:none${ms.length > 1 ? ";font-size:" + (ms.length > 2 ? 18 : 24) + "px" : ""}">${listaMesas(ms)}</b></div>
+      <div class="vi">
+        <b>${esc(v.comprador)}</b>
+        <span>Aluno: ${esc(v.aluno)} · ${esc(v.serie)} ${esc(v.turma)}</span>
+        <span>${esc(v.pagamento)} · ${brl(tot)}</span>
+        ${valida(v.criadoEm) ? `<span>🕒 Vendida em ${quando(v.criadoEm)}</span>` : ""}
+        ${cheg ? `<span class="grupo" style="color:var(--green-2)">✓ Chegou à festa${g.length > 1 && cheg < g.length ? ` (${cheg} de ${g.length})` : ""}</span>` : ""}
+      </div>
+      <div class="vlinks"><button class="lnk" data-mv-comp="${ms.join(",")}">Comprovante</button></div>
+    </article>`;
+  }).join("") : `<div class="vazio">${minhas.length ? "Nenhuma venda encontrada." : "Você ainda não vendeu nenhuma mesa. 🌱"}</div>`;
+}
+$("#mv-lista").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-mv-comp]"); if (!b) return;
+  const ms = b.dataset.mvComp.split(",").map(Number), g = vendas.filter((x) => ms.includes(x.mesa)).sort((a, b) => a.mesa - b.mesa);
+  if (g.length) abrirComprovante({ ...g[0], mesas: ms, total: g.reduce((s, x) => s + (+x.valor || 0), 0) });
+});
+renderMinhasVendas();
+
+store.onVendas((l) => { vendas = l; pintarMesas(); renderMinhasVendas(); renderVendedores(); renderLista(); renderContas(); },
   (e) => toast("Não foi possível carregar as vendas: " + e.message));
 
 // Lê "8, 9" / "8 9" / "8-10" e devolve a lista de números
