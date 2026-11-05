@@ -112,15 +112,16 @@ main{margin-top:-22px;position:relative;padding-bottom:48px}
 .mapa{display:grid;grid-template-columns:repeat(10,1fr);gap:7px}
 @media (max-width:520px){.mapa{gap:5px}.mesa{border-radius:9px;font-size:12px}}
 .mesa{aspect-ratio:1;border-radius:12px;border:2px solid var(--leaf);background:#EEF9F5;color:var(--green);display:grid;place-content:center;font-weight:800;font-size:14px;padding:0;transition:transform .15s,background .2s}
-.mesa.vendida{background:var(--pink);border-color:var(--pink);color:#fff}
+.mesa.vendida{background:var(--cor,var(--pink));border-color:var(--cor,var(--pink));color:#fff}
 .mesa.nova{animation:flash 1.2s ease}
 @keyframes flash{0%{transform:scale(1.25);box-shadow:0 0 0 6px var(--pink-soft)}100%{transform:none}}
 button.mesa{cursor:pointer}
-button.mesa:not(.vendida):hover{transform:translateY(-2px);border-color:var(--green-2)}
-button.mesa.sel{background:var(--green-2);border-color:var(--green-2);color:#fff}
-.legenda{display:flex;gap:14px;margin-top:12px;font-size:13px;color:var(--muted);font-weight:700;flex-wrap:wrap}
+button.mesa:not(.vendida):hover{transform:translateY(-2px);border-color:var(--green)}
+button.mesa.sel{background:#fff;border:3px solid var(--green);color:var(--green);box-shadow:0 0 0 3px rgba(11,79,92,.18);transform:scale(1.06)}
+.legenda{display:flex;gap:8px 12px;margin-top:12px;font-size:13px;color:var(--muted);font-weight:700;flex-wrap:wrap}
 .legenda i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:5px;border:2px solid var(--leaf);background:#EEF9F5}
-.legenda i.v{background:var(--pink);border-color:var(--pink)}
+.legenda i.v{background:var(--cor);border-color:var(--cor)}
+.legenda span{white-space:nowrap}
 .legenda i.s{background:var(--green-2);border-color:var(--green-2)}
 .contagem{font-family:Fraunces,serif;font-size:15px;color:var(--muted)}
 
@@ -154,7 +155,7 @@ legend{font-weight:800;font-size:14px;padding:0;margin-bottom:6px}
 .dica.ok{color:var(--green-2)}.dica.ruim{color:var(--danger)}
 .mesa.alerta{outline:3px solid var(--danger);outline-offset:2px}
 #mapa-publico button.mesa{cursor:pointer}
-#mapa-publico button.mesa:hover{transform:translateY(-2px);border-color:var(--green-2)}
+#mapa-publico button.mesa:hover{transform:translateY(-2px);border-color:var(--green)}
 .erro{color:var(--danger);font-weight:700;font-size:14px;min-height:1em}
 
 /* ---------- Vendedores ---------- */
@@ -415,7 +416,7 @@ body.modal-aberto{overflow:hidden}
       <div class="card">
         <div class="card-head"><h2>Mapa das mesas</h2><span class="contagem" data-contagem></span></div>
         <div class="mapa" id="mapa-publico" aria-label="Mapa das mesas"></div>
-        <div class="legenda"><span><i></i>Disponível — toque para vender</span><span><i class="v"></i>Vendida</span></div>
+        <div class="legenda" data-legenda></div>
       </div>
     </div>
   </section>
@@ -431,7 +432,7 @@ body.modal-aberto{overflow:hidden}
           <div class="card-head"><h2>Escolha a mesa</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
           <div class="sub"><span data-contagem></span> · toque em uma ou mais mesas livres</div>
             <div class="mapa" id="mapa-vendas"></div>
-            <div class="legenda"><span><i></i>Livre</span><span><i class="s"></i>Selecionada</span><span><i class="v"></i>Vendida</span></div>
+            <div class="legenda" data-legenda></div>
             <button type="button" class="btn btn-continuar" id="continuar" hidden></button>
         </div>
         <div class="card">
@@ -703,15 +704,28 @@ function renderResumo() {
   let pub = "", ven = "";
   for (let i = 1; i <= TOTAL_MESAS; i++) {
     const v = set.has(i), cls = `mesa${v ? " vendida" : ""}${novas.has(i) ? " nova" : ""}`;
-    pub += v ? `<div class="${cls}" title="Mesa ${i} — vendida">${i}</div>`
+    pub += v ? `<div class="${cls}" data-m="${i}" title="Mesa ${i} — vendida">${i}</div>`
              : `<button type="button" class="${cls}" data-m="${i}" title="Vender a mesa ${i}">${i}</button>`;
     ven += `<button type="button" class="${cls}${selecionadas.includes(i) ? " sel" : ""}" data-m="${i}" ${v ? "disabled" : ""} aria-label="Mesa ${i}${v ? " (vendida)" : ""}">${i}</button>`;
   }
   $("#mapa-publico").innerHTML = pub;
   $("#mapa-vendas").innerHTML = ven;
-  marcarMesa();
+  pintarMesas(); marcarMesa();
   $("#salvar").disabled = n >= TOTAL_MESAS;
 }
+// Cada mesa vendida fica com a cor de quem vendeu
+const corVend = (nome) => { const i = VENDEDORES.indexOf(nome); return i >= 0 ? CORES[i % CORES.length] : "#8FA5AA"; };
+const nomeCurto = (n) => ({ "MARCIA": "Márcia" }[n.split(" ")[0]] || primeiroNome(n));
+function pintarMesas() {
+  const dono = new Map(vendas.map((v) => [Number(v.mesa), v.vendedor]));
+  $$(".mapa .mesa.vendida").forEach((x) => {
+    const nome = dono.get(Number(x.dataset.m));
+    x.style.setProperty("--cor", nome ? corVend(nome) : "#8FA5AA");
+    x.title = `Mesa ${x.dataset.m} — vendida${nome ? " por " + nomeCurto(nome) : ""}`;
+  });
+}
+$$("[data-legenda]").forEach((l) => (l.innerHTML = `<span><i></i>Livre</span>` +
+  VENDEDORES.map((n) => `<span><i class="v" style="--cor:${corVend(n)}"></i>${esc(nomeCurto(n))}</span>`).join("")));
 
 function renderVendedores() {
   const tot = { Dinheiro: 0, PIX: 0 };
@@ -1084,7 +1098,7 @@ $("#contas-historico").addEventListener("click", async (e) => {
 });
 carregarContas(); vigiarContas();
 
-store.onVendas((l) => { vendas = l; renderVendedores(); renderLista(); renderContas(); },
+store.onVendas((l) => { vendas = l; pintarMesas(); renderVendedores(); renderLista(); renderContas(); },
   (e) => toast("Não foi possível carregar as vendas: " + e.message));
 
 // Lê "8, 9" / "8 9" / "8-10" e devolve a lista de números
