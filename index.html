@@ -300,6 +300,48 @@ body.modal-aberto{overflow:hidden}
 .aviso-acoes{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
 .aviso-card .btn{width:100%}
 /* avisos-fim */
+/* assistente-ini */
+.cta-fixo{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:5}
+.btn-continuar{box-shadow:0 10px 24px rgba(14,159,132,.35);animation:surge .3s ease}
+@keyframes surge{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+.sheet{position:fixed;inset:0;z-index:15;background:rgba(8,40,47,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none!important}
+.sheet-box{background:var(--paper);width:100%;max-width:520px;height:100%;max-height:100dvh;display:flex;flex-direction:column;overflow:hidden;animation:sobeSheet .28s ease}
+@media (min-width:700px){.sheet{align-items:center}.sheet-box{height:auto;max-height:92vh;border-radius:22px}}
+@keyframes sobeSheet{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.sheet-top{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;border-bottom:1px solid var(--line)}
+.sheet-btn{width:42px;height:42px;flex:none;border:0;border-radius:50%;background:var(--bg);font-size:20px;font-weight:800;color:var(--green);cursor:pointer}
+.sheet-info{flex:1;min-width:0;text-align:center;display:grid}
+.sheet-info b{font-family:Fraunces,Georgia,serif;font-size:19px;color:var(--green)}
+.sheet-info span{font-size:12.5px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.passos-barra{height:5px;background:var(--leaf)}
+.passos-barra i{display:block;height:100%;width:0;background:var(--green-2);transition:width .3s}
+#form-venda{flex:1;overflow-y:auto;padding:16px 18px calc(22px + env(safe-area-inset-bottom,0px));display:block}
+.passo-num{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--green-2);margin-bottom:6px}
+.passo{display:none}
+.passo.ativo{display:grid;gap:14px;animation:vemDireita .3s ease}
+.passo.ativo.volta{animation:vemEsquerda .3s ease}
+@keyframes vemDireita{from{transform:translateX(48px);opacity:0}to{transform:none;opacity:1}}
+@keyframes vemEsquerda{from{transform:translateX(-48px);opacity:0}to{transform:none;opacity:1}}
+.pergunta{font-size:24px;color:var(--ink);line-height:1.2}
+.pergunta label{display:inline;font:inherit}
+.passo-dica{margin:-6px 0 0;color:var(--muted);font-weight:600;font-size:14px}
+.passo input:not([type=radio]){font-size:18px;min-height:54px}
+.btn-prox{width:100%;margin-top:4px}
+.grade-serie{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grade-serie label,.seg-turma label{min-height:50px;font-size:15px;padding:0 6px}
+.seg-turma{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.seg-pag{display:grid;gap:10px}
+.seg-pag label{min-height:64px;font-size:19px;justify-content:flex-start;padding:0 18px}
+.revisao{margin:0;display:grid;border:1.5px solid var(--line);border-radius:14px;overflow:hidden}
+.revisao div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.revisao div:last-child{border-bottom:0}
+.revisao dt{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;grid-column:1}
+.revisao dd{margin:0;font-weight:800;font-size:16px;overflow-wrap:anywhere;grid-column:1}
+.revisao button{grid-column:2;grid-row:1/3;align-self:center}
+#salvar{position:sticky;bottom:0;box-shadow:0 -8px 18px rgba(255,255,255,.9),0 6px 16px rgba(244,180,0,.35)}
+.revisao .total dd{font-family:Fraunces,Georgia,serif;font-size:22px;color:var(--green-2)}
+/* assistente-fim */
 /* layout-celular-ini */
 .mapa-card{align-self:start}
 .row-valor{display:grid}
@@ -429,49 +471,12 @@ body.modal-aberto{overflow:hidden}
 
     <div id="painel" class="stack">
 
-      <div class="grid2">
-        <div class="card mapa-card">
-          <div class="card-head"><h2>Escolha a mesa</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
-          <div class="sub"><span data-contagem></span> · toque em uma ou mais mesas livres</div>
-            <div class="mapa" id="mapa-vendas"></div>
-            <div class="legenda" data-legenda></div>
-            <button type="button" class="btn btn-continuar" id="continuar" hidden></button>
-        </div>
-        <div class="card">
-          <div class="card-head"><h2>Nova venda</h2></div>
-          <form id="form-venda" novalidate>
-            <div class="row-valor">
-              <input type="hidden" name="mesa" id="sel-mesa">
-              <label><span id="rot-valor">Valor (R$)</span><input name="valor" id="valor" type="number" inputmode="decimal" min="0" step="0.01" required></label>
-            </div>
-            <div class="dica" id="dica-mesa" aria-live="polite">Toque em uma ou mais mesas no mapa.</div>
-            <div class="sessao" id="sessao">
-              <div class="sessao-on" id="sessao-on" hidden>
-                <span class="sessao-rot">Vendedor(a)</span>
-                <b id="sessao-nome"></b>
-                <button type="button" class="lnk" id="sair-vend">Trocar</button>
-              </div>
-              <div class="sessao-off" id="sessao-off">
-                <div class="sessao-tit">🔒 Toque no seu nome e digite seu PIN</div>
-                <div class="nomes" id="lista-vend" role="radiogroup" aria-label="Vendedor(a)"></div>
-                <input type="hidden" id="sel-vendedor">
-                <div class="sessao-campos">
-                  <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN do vendedor">
-                  <button type="button" class="btn btn-entrar" id="entrar-vend">Entrar</button>
-                </div>
-                <div class="erro" id="erro-sessao" role="alert"></div>
-              </div>
-              <input type="hidden" name="vendedor" id="vendedor">
-            </div>
-            <label>Nome do comprador<input name="comprador" autocomplete="off" required maxlength="100" placeholder="Ex.: Ana Paula Souza"></label>
-            <label>Nome do aluno<input name="aluno" autocomplete="off" required maxlength="100" placeholder="Ex.: João Pedro Souza"></label>
-            <label>Série<select name="serie" id="sel-serie" required></select></label>
-            <fieldset><legend>Turma</legend><div class="seg" id="seg-turma"></div></fieldset>
-            <fieldset><legend>Forma de pagamento</legend><div class="seg" id="seg-pag"></div></fieldset>
-            <div class="erro" id="erro-venda" role="alert"></div>
-            <button class="btn btn-primary" type="submit" id="salvar">💾 Salvar venda</button>
-          </form>
-        </div>
+      <div class="card mapa-card">
+        <div class="card-head"><h2>Escolha a mesa</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
+        <div class="sub"><span data-contagem></span> · toque em uma ou mais mesas livres</div>
+        <div class="mapa" id="mapa-vendas"></div>
+        <div class="legenda" data-legenda></div>
+        <div class="cta-fixo"><button type="button" class="btn btn-continuar" id="continuar" hidden></button></div>
       </div>
 
       <div class="card">
@@ -617,6 +622,77 @@ body.modal-aberto{overflow:hidden}
 
 <footer>E.M. Dep. Federal Ulisses Guimarães · Festa da Primavera 2026</footer>
 <div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Ver comprovante</button></div>
+<!-- =============== ASSISTENTE DE VENDA (passo a passo) =============== -->
+<div class="sheet" id="assistente" hidden role="dialog" aria-modal="true" aria-labelledby="ass-pergunta">
+  <div class="sheet-box">
+    <header class="sheet-top">
+      <button type="button" class="sheet-btn" id="ass-voltar" aria-label="Voltar">←</button>
+      <div class="sheet-info"><b id="ass-mesas"></b><span id="ass-sub"></span></div>
+      <button type="button" class="sheet-btn" id="ass-fechar" aria-label="Fechar">✕</button>
+    </header>
+    <div class="passos-barra"><i id="ass-barra"></i></div>
+    <form id="form-venda" novalidate>
+      <input type="hidden" name="mesa" id="sel-mesa">
+      <div hidden><span id="rot-valor"></span><input name="valor" id="valor"><div class="dica" id="dica-mesa"></div></div>
+      <input type="hidden" name="vendedor" id="vendedor">
+      <div class="passo-num" id="ass-num"></div>
+
+      <section class="passo" data-passo="vendedor">
+        <h3 class="pergunta">Quem está vendendo?</h3>
+        <p class="passo-dica">Toque no seu nome e digite seu PIN. A venda ficará registrada no seu nome.</p>
+        <div class="sessao" id="sessao">
+          <div class="sessao-on" id="sessao-on" hidden><span class="sessao-rot">Vendedor(a)</span><b id="sessao-nome"></b><button type="button" class="lnk" id="sair-vend">Trocar</button></div>
+          <div class="sessao-off" id="sessao-off">
+            <div class="nomes" id="lista-vend" role="radiogroup" aria-label="Vendedor(a)"></div>
+            <input type="hidden" id="sel-vendedor">
+            <div class="sessao-campos">
+              <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN do vendedor">
+              <button type="button" class="btn btn-entrar" id="entrar-vend">Entrar</button>
+            </div>
+            <div class="erro" id="erro-sessao" role="alert"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="passo" data-passo="comprador">
+        <h3 class="pergunta"><label for="in-comprador">Qual é o nome do comprador?</label></h3>
+        <p class="passo-dica">Quem está pagando pela mesa (pai, mãe ou responsável).</p>
+        <input id="in-comprador" name="comprador" autocomplete="off" maxlength="100" placeholder="Nome completo" enterkeyhint="next">
+        <div class="erro" data-erro-passo role="alert"></div>
+        <button type="button" class="btn btn-primary btn-prox" data-prox>Próximo →</button>
+      </section>
+
+      <section class="passo" data-passo="aluno">
+        <h3 class="pergunta"><label for="in-aluno">Qual é o nome do aluno?</label></h3>
+        <p class="passo-dica">O(a) estudante da escola ligado(a) a esta compra.</p>
+        <input id="in-aluno" name="aluno" autocomplete="off" maxlength="100" placeholder="Nome completo" enterkeyhint="next">
+        <div class="erro" data-erro-passo role="alert"></div>
+        <button type="button" class="btn btn-primary btn-prox" data-prox>Próximo →</button>
+      </section>
+
+      <section class="passo" data-passo="serie">
+        <h3 class="pergunta">Série e turma do aluno</h3>
+        <fieldset><legend>Série</legend><div class="seg grade-serie" id="grade-serie"></div></fieldset>
+        <fieldset><legend>Turma</legend><div class="seg seg-turma" id="seg-turma"></div></fieldset>
+        <div class="erro" data-erro-passo role="alert"></div>
+        <button type="button" class="btn btn-primary btn-prox" data-prox>Próximo →</button>
+      </section>
+
+      <section class="passo" data-passo="pagamento">
+        <h3 class="pergunta">Como o comprador pagou?</h3>
+        <div class="seg seg-pag" id="seg-pag"></div>
+        <div class="erro" data-erro-passo role="alert"></div>
+      </section>
+
+      <section class="passo" data-passo="revisao">
+        <h3 class="pergunta">Confira antes de salvar</h3>
+        <dl class="revisao" id="revisao"></dl>
+        <div class="erro" id="erro-venda" role="alert"></div>
+        <button class="btn btn-primary btn-prox" type="submit" id="salvar">💾 Salvar venda</button>
+      </section>
+    </form>
+  </div>
+</div>
 <div class="modal modal-aviso" id="modal-aviso" hidden role="alertdialog" aria-modal="true" aria-labelledby="aviso-tit">
   <div class="aviso-card">
     <div class="aviso-ico">📌</div>
@@ -698,7 +774,7 @@ $("#lista-vend").addEventListener("click", (e) => {
   const b = e.target.closest(".nome-btn"); if (!b) return;
   escolherNome(b.dataset.nome); $("#erro-sessao").textContent = ""; $("#pin").focus();
 });
-$("#sel-serie").innerHTML = `<option value="">Selecione…</option>` + SERIES.map((v) => `<option>${esc(v)}</option>`).join("");
+$("#grade-serie").innerHTML = SERIES.map((s, i) => `<input type="radio" name="serie" id="s${i}" value="${esc(s)}"><label for="s${i}">${esc(s)}</label>`).join("");
 $("#seg-turma").innerHTML = TURMAS.map((t, i) => `<input type="radio" name="turma" id="t${i}" value="${t}"><label for="t${i}">${t}</label>`).join("");
 $("#seg-pag").innerHTML = PAGAMENTOS.map((p, i) => `<input type="radio" name="pagamento" id="p${i}" value="${p}"><label for="p${i}">${p === "PIX" ? "⚡ PIX" : "💵 Dinheiro"}</label>`).join("");
 $("#filtro-vend").innerHTML += VENDEDORES.map((v) => `<option>${esc(v)}</option>`).join("");
@@ -993,7 +1069,7 @@ $("#entrar-vend").addEventListener("click", async () => {
     await store.entrar(nome, pin);
     sessao = { nome, pin }; try { localStorage.setItem("fp-sessao", JSON.stringify(sessao)); } catch {}
     $("#pin").value = ""; mostrarSessao(); toast(`Olá, ${primeiroNome(nome)}! Vendas serão registradas no seu nome.`);
-    const c = $("input[name=comprador]"); c.scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(() => c.focus({ preventScroll: true }), 350);
+    if (!$("#assistente").hidden) { if (editando) { editando = false; irPasso("revisao"); } else irPasso("comprador"); }
   } catch (e) { er.textContent = e.message || "Não foi possível conferir o PIN."; }
   finally { bt.disabled = false; bt.textContent = "Entrar"; }
 });
@@ -1235,22 +1311,93 @@ function marcarMesa() {
 }
 // Depois de escolher a mesa: se o vendedor ainda não se identificou, vai para a identificação;
 // se já se identificou, vai direto para o nome do comprador.
-function irParaFormulario() {
-  const destino = sessao ? $("input[name=comprador]") : $("#sessao");
-  destino.scrollIntoView({ behavior: "smooth", block: sessao ? "center" : "start" });
-  setTimeout(() => (sessao ? destino : ($("#sel-vendedor").value ? $("#pin") : $("#lista-vend .nome-btn"))).focus({ preventScroll: true }), 400);
+// ------------------------------------------------------------ assistente de venda (um dado por vez)
+const PASSOS = ["vendedor", "comprador", "aluno", "serie", "pagamento", "revisao"];
+let passoAtual = "comprador", passosVenda = PASSOS, editando = false;
+const passosVisiveis = () => passosVenda;
+function infoAssistente() {
+  const n = selecionadas.length;
+  $("#ass-mesas").textContent = n > 1 ? `Mesas ${listaMesas(selecionadas)}` : `Mesa ${selecionadas[0] ?? ""}`;
+  $("#ass-sub").textContent = brl(VALOR_MESA * Math.max(n, 1)) + (sessao ? " · " + nomeCurto(sessao.nome) : "");
 }
+function irPasso(p, volta) {
+  passoAtual = p; const vis = passosVisiveis(), i = vis.indexOf(p);
+  $$("#assistente .passo").forEach((s) => { const on = s.dataset.passo === p; s.classList.toggle("ativo", on); s.classList.toggle("volta", on && !!volta); });
+  $$("#assistente [data-erro-passo]").forEach((x) => (x.textContent = ""));
+  $("#ass-num").textContent = `Passo ${i + 1} de ${vis.length}`;
+  $("#ass-barra").style.width = ((i + 1) / vis.length) * 100 + "%";
+  infoAssistente();
+  if (p === "revisao") montarRevisao();
+  const foco = { vendedor: sessao ? null : ($("#sel-vendedor").value ? "#pin" : "#lista-vend .nome-btn"), comprador: "#in-comprador", aluno: "#in-aluno" }[p];
+  $("#form-venda").scrollTop = 0;
+  if (foco) setTimeout(() => $(foco) && $(foco).focus({ preventScroll: true }), 320);
+}
+function abrirAssistente() {
+  if (!selecionadas.length) return;
+  $("#erro-venda").textContent = "";
+  passosVenda = PASSOS.filter((p) => p !== "vendedor" || !sessao); editando = false;
+  $("#assistente").hidden = false; document.body.classList.add("modal-aberto");
+  irPasso(sessao ? "comprador" : "vendedor");
+}
+function fecharAssistente() { $("#assistente").hidden = true; if ($("#modal-comp").hidden && $("#modal-venda").hidden) document.body.classList.remove("modal-aberto"); }
+const valorDe = (n) => (($(`#form-venda [name=${n}]:checked`) || {}).value) || "";
+function validaPasso(p) {
+  const f = $("#form-venda").elements;
+  if (p === "comprador" && !f.comprador.value.trim()) return "Digite o nome do comprador.";
+  if (p === "aluno" && !f.aluno.value.trim()) return "Digite o nome do aluno.";
+  if (p === "serie" && !valorDe("serie")) return "Toque na série do aluno.";
+  if (p === "serie" && !valorDe("turma")) return "Toque na turma do aluno.";
+  if (p === "pagamento" && !valorDe("pagamento")) return "Escolha a forma de pagamento.";
+  return "";
+}
+function avancar() {
+  const msg = validaPasso(passoAtual), el = $(`#assistente .passo[data-passo="${passoAtual}"] [data-erro-passo]`);
+  if (msg) { if (el) el.textContent = msg; const inp = $(`#assistente .passo[data-passo="${passoAtual}"] input:not([type=radio])`); if (inp) inp.focus(); return; }
+  if (editando) { editando = false; return irPasso("revisao"); } // veio do "Alterar": volta direto à conferência
+  const vis = passosVisiveis(); irPasso(vis[vis.indexOf(passoAtual) + 1] || "revisao");
+}
+function voltar() {
+  const vis = passosVisiveis(), i = vis.indexOf(passoAtual);
+  if (i <= 0) fecharAssistente(); else irPasso(vis[i - 1], true);
+}
+function montarRevisao() {
+  const f = $("#form-venda").elements, n = selecionadas.length;
+  const linhas = [
+    ["Mesa" + (n > 1 ? "s" : ""), n > 1 ? listaMesas(selecionadas) : selecionadas[0], null],
+    ["Comprador", f.comprador.value.trim().toUpperCase(), "comprador"],
+    ["Aluno", f.aluno.value.trim().toUpperCase(), "aluno"],
+    ["Série e turma", `${valorDe("serie")} ${valorDe("turma")}`, "serie"],
+    ["Pagamento", valorDe("pagamento"), "pagamento"],
+    ["Vendedor(a)", sessao ? sessao.nome : "", "trocar"],
+  ];
+  $("#revisao").innerHTML = linhas.map(([r, v, p]) => `<div><dt>${r}</dt><dd>${esc(v)}</dd>${p ? `<button type="button" class="lnk" data-ir="${p}">Alterar</button>` : ""}</div>`).join("") +
+    `<div class="total"><dt>Total a receber</dt><dd>${brl(VALOR_MESA * n)}</dd></div>`;
+}
+$("#assistente").addEventListener("click", (e) => {
+  if (e.target.closest("[data-prox]")) { e.preventDefault(); avancar(); return; }
+  const ir = e.target.closest("[data-ir]"); if (!ir) return;
+  if (ir.dataset.ir === "trocar") { sairSessao(); passosVenda = PASSOS; editando = true; irPasso("vendedor", true); } else { editando = true; irPasso(ir.dataset.ir, true); }
+});
+$("#ass-voltar").addEventListener("click", voltar);
+$("#form-venda").addEventListener("input", (e) => { const er = e.target.closest(".passo")?.querySelector("[data-erro-passo]"); if (er) er.textContent = ""; });
+$("#ass-fechar").addEventListener("click", fecharAssistente);
+$("#form-venda").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.target.matches("#in-comprador, #in-aluno")) { e.preventDefault(); avancar(); }
+});
+// pagamento: um toque já leva para a conferência
+$("#seg-pag").addEventListener("click", (e) => { if (e.target.closest("label")) setTimeout(() => passoAtual === "pagamento" && avancar(), 220); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#assistente").hidden && $("#modal-comp").hidden) fecharAssistente(); });
 $("#mapa-vendas").addEventListener("click", (e) => {
   const b = e.target.closest("button.mesa"); if (!b || b.disabled) return;
   const m = Number(b.dataset.m);
   const l = selecionadas.includes(m) ? selecionadas.filter((x) => x !== m) : [...selecionadas, m].sort((a, b) => a - b);
   $("#sel-mesa").value = l.join(", "); marcarMesa();
 });
-$("#continuar").addEventListener("click", irParaFormulario);
+$("#continuar").addEventListener("click", abrirAssistente);
 
 $("#mapa-publico").addEventListener("click", (e) => {
   const b = e.target.closest("button.mesa"); if (!b) return;
-  location.hash = "#vendas"; $("#sel-mesa").value = b.dataset.m; marcarMesa(); irParaFormulario();
+  location.hash = "#vendas"; $("#sel-mesa").value = b.dataset.m; marcarMesa(); setTimeout(abrirAssistente, 60);
 });
 
 
@@ -1268,8 +1415,8 @@ $("#form-venda").addEventListener("submit", async (e) => {
     [!v.comprador, "o nome do comprador"], [!v.aluno, "o nome do aluno"], [!v.serie, "a série"],
     [!v.turma, "a turma"], [!v.pagamento, "a forma de pagamento"],
   ].filter(([x]) => x).map(([, t]) => t);
-  if (!v.mesas.length) { erro.textContent = "Escolha a mesa tocando no número dela no mapa."; $("#mapa-vendas").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
-  if (!sessao) { erro.textContent = "Identifique-se com seu nome e PIN antes de salvar."; $("#sessao").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+  if (!v.mesas.length) { fecharAssistente(); $("#mapa-vendas").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+  if (!sessao) { passosVenda = PASSOS; irPasso("vendedor", true); return; }
   if (faltando.length) { erro.textContent = "Preencha " + faltando.join(", ") + "."; return; }
   if (lerMesas($("#sel-mesa").value).some((m) => m < 1 || m > TOTAL_MESAS)) { erro.textContent = `As mesas vão de 1 a ${TOTAL_MESAS}.`; return; }
   const ja = v.mesas.filter((m) => vendidas.includes(m));
@@ -1281,9 +1428,10 @@ $("#form-venda").addEventListener("submit", async (e) => {
     e.target.elements.serie.value = "";
     $$("#form-venda input[type=radio]").forEach((r) => (r.checked = false));
     e.target.elements.mesa.value = ""; selecionadas = []; renderResumo();
+    fecharAssistente();
     avisarVenda({ ...v, total: v.valor * v.mesas.length, criadoEm: new Date().toISOString() });
   } catch (err) {
-    if (/PIN/i.test(err.message || "")) { sairSessao(err.message); erro.textContent = "Entre de novo com o seu PIN."; }
+    if (/PIN/i.test(err.message || "")) { sairSessao(err.message); passosVenda = PASSOS; irPasso("vendedor", true); }
     else erro.textContent = err.message || "Não foi possível salvar. Verifique a internet.";
   }
   finally { $("#salvar").textContent = "💾 Salvar venda"; $("#salvar").disabled = vendidas.length >= TOTAL_MESAS; }
