@@ -287,8 +287,8 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 body.modal-aberto{overflow:hidden}
 /* comprovante-fim */
 /* avisos-ini */
-.modal-aviso{align-items:center;background:rgba(8,40,47,.72);backdrop-filter:blur(3px)}
-.aviso-card{background:var(--paper);border-radius:22px;width:100%;max-width:420px;padding:24px 20px 20px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3);animation:pop .3s ease;display:grid;gap:12px}
+.modal-aviso{align-items:flex-start;background:rgba(8,40,47,.72);backdrop-filter:blur(3px)}
+.aviso-card{margin:auto 0;background:var(--paper);border-radius:22px;width:100%;max-width:420px;padding:24px 20px 20px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3);animation:pop .3s ease;display:grid;gap:12px}
 .aviso-ico{width:56px;height:56px;margin:0 auto;border-radius:50%;display:grid;place-content:center;font-size:28px;background:var(--sun-soft)}
 .aviso-ico.ok{background:var(--leaf);color:var(--green-2);font-weight:800}
 .aviso-card h2{font-size:24px;color:var(--green)}
@@ -342,6 +342,16 @@ body.modal-aberto{overflow:hidden}
 #salvar{position:sticky;bottom:0;box-shadow:0 -8px 18px rgba(255,255,255,.9),0 6px 16px rgba(244,180,0,.35)}
 .revisao .total dd{font-family:Fraunces,Georgia,serif;font-size:22px;color:var(--green-2)}
 .dica-auto{margin-top:12px;background:var(--leaf);color:var(--green);border-radius:12px;padding:10px 12px;font-size:13.5px;font-weight:700}
+.pix-valor{font-family:Fraunces,Georgia,serif;font-size:34px;font-weight:800;color:var(--green-2);margin-top:-6px}
+.pix-qr{width:min(210px,56vw);margin:0 auto;background:#fff;padding:8px;border-radius:14px;border:1.5px solid var(--line)}
+.pix-qr svg{display:block;width:100%;height:auto}
+#modal-pix .aviso-card{gap:8px;padding:18px 16px 16px}
+#modal-pix .aviso-card h2{font-size:21px}
+#modal-pix p{font-size:14px;line-height:1.35}
+#modal-pix .aviso-destaque{padding:9px 12px}
+#modal-pix .pix-valor{font-size:30px}
+.pix-ok{color:var(--green-2)!important;font-weight:800!important}
+.pix-pend{color:#B26A00!important;font-weight:800!important}
 /* assistente-fim */
 /* layout-celular-ini */
 .mapa-card{align-self:start}
@@ -705,6 +715,19 @@ body.modal-aberto{overflow:hidden}
     <button type="button" class="btn btn-primary" id="aviso-ok">OK, entendi</button>
   </div>
 </div>
+<div class="modal modal-aviso" id="modal-pix" hidden role="dialog" aria-modal="true" aria-labelledby="pix-tit">
+  <div class="aviso-card">
+    <h2 id="pix-tit">⚡ Pagamento via PIX</h2>
+    <div class="pix-valor" id="pix-valor"></div>
+    <div class="aviso-sub" id="pix-mesas"></div>
+    <div class="pix-qr" id="pix-qr" role="img" aria-label="QR Code do PIX"></div>
+    <p class="aviso-dica">No app do banco do comprador: <b>Pix → Pagar com QR Code</b>.</p>
+    <button type="button" class="btn btn-ghost" id="pix-copiar">📋 Copiar código PIX (copia e cola)</button>
+    <p class="aviso-destaque">🔒 Confira no celular do comprador: o recebedor deve ser <b id="pix-recebedor"></b>. Só confirme depois que o valor cair na conta.</p>
+    <div class="erro" id="erro-pix" role="alert"></div>
+    <div class="aviso-acoes"><button type="button" class="btn btn-ghost" id="pix-depois">Confirmar depois</button><button type="button" class="btn btn-primary" id="pix-ok">✅ Confirmar recebimento</button></div>
+  </div>
+</div>
 <div class="modal modal-aviso" id="modal-venda" hidden role="alertdialog" aria-modal="true" aria-labelledby="venda-tit">
   <div class="aviso-card">
     <div class="aviso-ico ok">✓</div>
@@ -729,9 +752,10 @@ body.modal-aberto{overflow:hidden}
 </div>
 
 
+<script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261103-1845";
-import { criarStore } from "./store.js?v=20261103-1845";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261105-1610";
+import { criarStore } from "./store.js?v=20261105-1610";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -900,7 +924,7 @@ function renderLista() {
     <div class="vi">
       <b>${marca(v.comprador)}</b>
       <span>Aluno: ${marca(v.aluno)} · ${esc(v.serie)} ${esc(v.turma)}</span>
-      <span>${esc(v.pagamento)} · ${brl(v.valor)} · vendida por ${esc(primeiroNome(v.vendedor))}</span>
+      <span>${esc(v.pagamento)} · ${brl(v.valor)} · vendida por ${esc(primeiroNome(v.vendedor))}${v.pagamento === "PIX" ? (valida(v.pixOk) ? ' · <b class="pix-ok">PIX confirmado</b>' : ' · <b class="pix-pend">PIX a confirmar</b>') : ""}</span>
       ${valida(v.criadoEm) ? `<span>🕒 Vendida em ${quando(v.criadoEm)}</span>` : ""}
       ${grupoDe(v).length > 1 ? `<span class="grupo">Comprou ${grupoDe(v).length} mesas: ${listaMesas(grupoDe(v).map((x) => x.mesa))}</span>` : ""}
     </div>
@@ -1016,6 +1040,32 @@ async function abrirComprovante(v) {
   $("#modal-comp").hidden = false; document.body.classList.add("modal-aberto");
   $("#comp-fechar").focus({ preventScroll: true });
 }
+// ------------------------------------------------------------ PIX (QR Code gerado pelo servidor)
+let pixAtual = null;
+function abrirPix(v, pix, depois) {
+  const ms = v.mesas || [v.mesa];
+  pixAtual = { v, pix, depois, ms };
+  $("#pix-valor").textContent = brl(pix.valor);
+  $("#pix-mesas").textContent = `${ms.length > 1 ? "Mesas " + listaMesas(ms) : "Mesa " + ms[0]} · ${v.comprador}`;
+  $("#pix-recebedor").textContent = pix.recebedor || "";
+  const q = qrcode(0, "M"); q.addData(pix.payload); q.make();
+  $("#pix-qr").innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+  $("#erro-pix").textContent = ""; $("#pix-ok").disabled = false; $("#pix-ok").textContent = "✅ Confirmar recebimento";
+  abrirAviso("#modal-pix", "#pix-ok");
+}
+function fecharPix() { fecharAviso("#modal-pix"); const d = pixAtual && pixAtual.depois; pixAtual = null; if (d) d(); }
+$("#pix-copiar").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(pixAtual.pix.payload); toast("Código PIX copiado. Envie ao comprador para ele colar no app do banco."); }
+  catch { toast("Não foi possível copiar."); }
+});
+$("#pix-depois").addEventListener("click", () => { toast("PIX pendente. Confirme depois na aba Minhas vendas."); fecharPix(); });
+$("#pix-ok").addEventListener("click", async () => {
+  if (!pixAtual || !sessao) return;
+  const bt = $("#pix-ok"); bt.disabled = true; bt.textContent = "Confirmando…";
+  try { await store.confirmarPix(sessao.nome, sessao.pin, pixAtual.ms); toast("PIX confirmado! 💚"); fecharPix(); }
+  catch (e) { $("#erro-pix").textContent = e.message || "Não foi possível confirmar."; bt.disabled = false; bt.textContent = "✅ Confirmar recebimento"; }
+});
+
 // ------------------------------------------------------------ avisos (ordem de chegada)
 function abrirAviso(id, foco) { $(id).hidden = false; document.body.classList.add("modal-aberto"); setTimeout(() => $(foco).focus({ preventScroll: true }), 50); }
 function fecharAviso(id) { $(id).hidden = true; if ($("#modal-comp").hidden) document.body.classList.remove("modal-aberto"); }
@@ -1271,13 +1321,23 @@ function renderMinhasVendas() {
         <span>Aluno: ${esc(v.aluno)} · ${esc(v.serie)} ${esc(v.turma)}</span>
         <span>${esc(v.pagamento)} · ${brl(tot)}</span>
         ${valida(v.criadoEm) ? `<span>🕒 Vendida em ${quando(v.criadoEm)}</span>` : ""}
+        ${v.pagamento === "PIX" ? (g.every((x) => valida(x.pixOk)) ? `<span class="pix-ok">⚡ PIX confirmado em ${quando(g[0].pixOk)}</span>` : `<span class="pix-pend">⏳ PIX aguardando confirmação</span>`) : ""}
         ${cheg ? `<span class="grupo" style="color:var(--green-2)">✓ Chegou à festa${g.length > 1 && cheg < g.length ? ` (${cheg} de ${g.length})` : ""}</span>` : ""}
       </div>
-      <div class="vlinks"><button class="lnk" data-mv-comp="${ms.join(",")}">Comprovante</button></div>
+      <div class="vlinks"><button class="lnk" data-mv-comp="${ms.join(",")}">Comprovante</button>${v.pagamento === "PIX" && !g.every((x) => valida(x.pixOk)) ? `<button class="lnk" data-mv-pix="${ms.join(",")}">⚡ Ver QR Code / confirmar PIX</button>` : ""}</div>
     </article>`;
   }).join("") : `<div class="vazio">${minhas.length ? "Nenhuma venda encontrada." : "Você ainda não vendeu nenhuma mesa. 🌱"}</div>`;
 }
-$("#mv-lista").addEventListener("click", (e) => {
+$("#mv-lista").addEventListener("click", async (e) => {
+  const px = e.target.closest("[data-mv-pix]");
+  if (px) {
+    const ms = px.dataset.mvPix.split(",").map(Number), g = vendas.filter((x) => ms.includes(x.mesa));
+    px.disabled = true; px.textContent = "Gerando QR Code…";
+    try { const r = await store.pix(sessao.nome, sessao.pin, ms); abrirPix({ ...g[0], mesas: ms }, r.pix, null); }
+    catch (err) { toast("Erro: " + err.message); }
+    finally { px.disabled = false; px.textContent = "⚡ Ver QR Code / confirmar PIX"; }
+    return;
+  }
   const b = e.target.closest("[data-mv-comp]"); if (!b) return;
   const ms = b.dataset.mvComp.split(",").map(Number), g = vendas.filter((x) => ms.includes(x.mesa)).sort((a, b) => a.mesa - b.mesa);
   if (g.length) abrirComprovante({ ...g[0], mesas: ms, total: g.reduce((s, x) => s + (+x.valor || 0), 0) });
@@ -1433,13 +1493,15 @@ $("#form-venda").addEventListener("submit", async (e) => {
   if (ja.length) { erro.textContent = `${ja.length > 1 ? "As mesas " + listaMesas(ja) + " já foram vendidas" : "A mesa " + ja[0] + " já foi vendida"}. Escolha outra.`; return; }
   erro.textContent = ""; $("#salvar").disabled = true; $("#salvar").textContent = "Salvando…";
   try {
-    await store.vender(v, sessao.pin);
+    const resp = await store.vender(v, sessao.pin);
     ["comprador", "aluno"].forEach((n) => (e.target.elements[n].value = ""));
     e.target.elements.serie.value = "";
     $$("#form-venda input[type=radio]").forEach((r) => (r.checked = false));
     e.target.elements.mesa.value = ""; selecionadas = []; limpouSel = false; renderResumo();
     fecharAssistente();
-    avisarVenda({ ...v, total: v.valor * v.mesas.length, criadoEm: new Date().toISOString() });
+    const feita = { ...v, total: v.valor * v.mesas.length, criadoEm: new Date().toISOString() };
+    if (v.pagamento === "PIX" && resp && resp.pix) abrirPix(feita, resp.pix, () => avisarVenda(feita));
+    else avisarVenda(feita);
   } catch (err) {
     if (/PIN/i.test(err.message || "")) { sairSessao(err.message); passosVenda = PASSOS; irPasso("vendedor", true); }
     else erro.textContent = err.message || "Não foi possível salvar. Verifique a internet.";

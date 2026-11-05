@@ -17,7 +17,7 @@ function aba_() {
   // Datas e horários sempre no horário de Manaus
   if (ss.getSpreadsheetTimeZone() !== 'America/Manaus') ss.setSpreadsheetTimeZone('America/Manaus');
   const sh = ss.getSheets()[0];
-  sh.getRange('I:J').setNumberFormat('dd/MM/yyyy HH:mm:ss');
+  sh.getRange('I:K').setNumberFormat('dd/MM/yyyy HH:mm:ss');
   return sh;
 }
 
@@ -33,6 +33,7 @@ function lerVendas_() {
         valor: Number(r[6]) || 0, vendedor: String(r[7]),
         criadoEm: iso_(r[8]),
         chegada: iso_(r[9]),
+        pixOk: iso_(r[10]),
       };
     });
 }
@@ -93,6 +94,39 @@ function lerPrest_() {
   });
 }
 
+// ---- PIX: a chave fica APENAS no projeto do Apps Script (nunca no GitHub).
+// O código PIX (copia e cola / QR Code) é montado aqui no servidor e só é entregue
+// a um vendedor autenticado com o PIN, para uma venda PIX dele mesmo.
+const PIX_CHAVE = '';
+const PIX_NOME = 'ALESSON MIRANDA PEREIRA';
+const PIX_CIDADE = 'MANAUS';
+function emv_(id, v) { v = String(v); return id + ('0' + v.length).slice(-2) + v; }
+function crc16_(s) {
+  let c = 0xFFFF; const b = Utilities.newBlob(s).getBytes();
+  for (let i = 0; i < b.length; i++) {
+    c ^= (b[i] & 0xff) << 8;
+    for (let j = 0; j < 8; j++) { c = (c & 0x8000) ? ((c << 1) ^ 0x1021) : (c << 1); c &= 0xFFFF; }
+  }
+  return ('000' + c.toString(16).toUpperCase()).slice(-4);
+}
+function pix_(valor, mesas) {
+  if (!PIX_CHAVE) throw new Error('Chave PIX não configurada.');
+  const txid = ('FP26M' + mesas.join('M')).replace(/[^A-Za-z0-9]/g, '').slice(0, 25);
+  const s = emv_('00', '01') + emv_('01', '11') +
+    emv_('26', emv_('00', 'br.gov.bcb.pix') + emv_('01', PIX_CHAVE)) +
+    emv_('52', '0000') + emv_('53', '986') + emv_('54', Number(valor).toFixed(2)) + emv_('58', 'BR') +
+    emv_('59', PIX_NOME.slice(0, 25)) + emv_('60', PIX_CIDADE.slice(0, 15)) + emv_('62', emv_('05', txid)) + '6304';
+  return { payload: s + crc16_(s), valor: Number(valor), recebedor: PIX_NOME };
+}
+// Confere se as mesas são uma venda PIX do próprio vendedor
+function vendaPix_(vendas, nome, mesas) {
+  const g = vendas.filter(function (x) { return mesas.indexOf(x.mesa) >= 0; });
+  if (!mesas.length || g.length !== mesas.length) throw new Error('Mesa sem venda registrada.');
+  if (g.some(function (x) { return x.vendedor !== nome; })) throw new Error('Essa venda é de outro vendedor.');
+  if (g.some(function (x) { return x.pagamento !== 'PIX'; })) throw new Error('Essa venda não foi paga por PIX.');
+  return g;
+}
+
 function doGet() {
   return json_({ ok: true, vendas: lerVendas_() });
 }
@@ -104,6 +138,7 @@ function doPost(e) {
     const d = JSON.parse(e.postData.contents);
     const sh = aba_();
     const vendas = lerVendas_();
+    let pixResp = null;
 
     if (d.acao === 'entrar') {
       autentica_(d.vendedor, d.pin);
@@ -129,6 +164,7 @@ function doPost(e) {
           v.pagamento, Number(v.valor), texto_(v.vendedor), agora];
       });
       sh.getRange(sh.getLastRow() + 1, 1, linhas.length, 9).setValues(linhas);
+      if (v.pagamento === 'PIX' && PIX_CHAVE) pixResp = pix_(Number(v.valor) * mesas.length, mesas);
     } else if (d.acao === 'chegada') {
       // Recepção no dia da festa: marca (ou desmarca) a chegada do comprador
       const alvo = (Array.isArray(d.mesas) ? d.mesas : [d.mesa]).map(Number);
@@ -139,6 +175,20 @@ function doPost(e) {
         if (alvo.indexOf(Number(col[i][0])) >= 0) { sh.getRange(i + 1, 10).setValue(d.chegou ? new Date() : ''); achou++; }
       }
       if (!achou) throw new Error('Mesa sem venda registrada.');
+    } else if (d.acao === 'pix') {
+      autentica_(d.vendedor, d.pin);
+      const ms = (d.mesas || []).map(Number);
+      const g = vendaPix_(vendas, d.vendedor, ms);
+      pixResp = pix_(g.reduce(function (s, x) { return s + x.valor; }, 0), ms);
+    } else if (d.acao === 'confirmarPix') {
+      autentica_(d.vendedor, d.pin); // só quem vendeu confirma o recebimento
+      const ms = (d.mesas || []).map(Number);
+      vendaPix_(vendas, d.vendedor, ms);
+      if (sh.getRange(1, 11).getValue() === '') sh.getRange(1, 11).setValue('PIX confirmado');
+      const col = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
+      for (let i = 1; i < col.length; i++) {
+        if (ms.indexOf(Number(col[i][0])) >= 0) sh.getRange(i + 1, 11).setValue(d.desfazer ? '' : new Date());
+      }
     } else if (d.acao === 'minhas') {
       autentica_(d.vendedor, d.pin); // cada vendedor vê só as próprias prestações
     } else if (d.acao === 'prestacoes') {
@@ -177,6 +227,7 @@ function doPost(e) {
     }
     SpreadsheetApp.flush();
     const resp = { ok: true, vendas: lerVendas_() };
+    if (pixResp) resp.pix = pixResp;
     if (['prestacoes', 'receber', 'estornar'].indexOf(d.acao) >= 0) resp.prestacoes = lerPrest_();
     if (d.acao === 'minhas') resp.prestacoes = lerPrest_().filter(function (p) { return p.vendedor === d.vendedor; });
     return json_(resp);
