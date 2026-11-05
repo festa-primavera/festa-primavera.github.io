@@ -721,9 +721,9 @@ body.modal-aberto{overflow:hidden}
     <div class="pix-valor" id="pix-valor"></div>
     <div class="aviso-sub" id="pix-mesas"></div>
     <div class="pix-qr" id="pix-qr" role="img" aria-label="QR Code do PIX"></div>
-    <p class="aviso-dica">No app do banco do comprador: <b>Pix → Pagar com QR Code</b>.</p>
+    <p class="aviso-dica">No app do banco <span id="pix-quem">do comprador</span>: <b>Pix → Pagar com QR Code</b>.</p>
     <button type="button" class="btn btn-ghost" id="pix-copiar">📋 Copiar código PIX (copia e cola)</button>
-    <p class="aviso-destaque">🔒 Confira no celular do comprador: o recebedor deve ser <b id="pix-recebedor"></b>. Só confirme depois que o valor cair na conta.</p>
+    <p class="aviso-destaque">🔒 Confira no celular <span id="pix-quem2">do comprador</span>: o recebedor deve ser <b id="pix-recebedor"></b>. Só confirme depois que o valor cair na conta.</p>
     <div class="erro" id="erro-pix" role="alert"></div>
     <div class="aviso-acoes"><button type="button" class="btn btn-ghost" id="pix-depois">Confirmar depois</button><button type="button" class="btn btn-primary" id="pix-ok">✅ Confirmar recebimento</button></div>
   </div>
@@ -754,8 +754,8 @@ body.modal-aberto{overflow:hidden}
 
 <script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261105-1610";
-import { criarStore } from "./store.js?v=20261105-1610";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261105-1640";
+import { criarStore } from "./store.js?v=20261105-1640";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1042,11 +1042,15 @@ async function abrirComprovante(v) {
 }
 // ------------------------------------------------------------ PIX (QR Code gerado pelo servidor)
 let pixAtual = null;
-function abrirPix(v, pix, depois) {
-  const ms = v.mesas || [v.mesa];
-  pixAtual = { v, pix, depois, ms };
+// opt (prestação de contas): { titulo, sub, quemPaga, labelDepois, msgDepois, onConfirm }
+function abrirPix(v, pix, depois, opt = {}) {
+  const ms = v ? (v.mesas || [v.mesa]) : [];
+  pixAtual = { v, pix, depois, ms, opt };
+  $("#pix-tit").textContent = opt.titulo || "⚡ Pagamento via PIX";
   $("#pix-valor").textContent = brl(pix.valor);
-  $("#pix-mesas").textContent = `${ms.length > 1 ? "Mesas " + listaMesas(ms) : "Mesa " + ms[0]} · ${v.comprador}`;
+  $("#pix-mesas").textContent = opt.sub || `${ms.length > 1 ? "Mesas " + listaMesas(ms) : "Mesa " + ms[0]} · ${v.comprador}`;
+  $("#pix-quem").textContent = opt.quemPaga || "do comprador"; $("#pix-quem2").textContent = opt.quemPaga || "do comprador";
+  $("#pix-depois").textContent = opt.labelDepois || "Confirmar depois";
   $("#pix-recebedor").textContent = pix.recebedor || "";
   const q = qrcode(0, "M"); q.addData(pix.payload); q.make();
   $("#pix-qr").innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
@@ -1055,14 +1059,18 @@ function abrirPix(v, pix, depois) {
 }
 function fecharPix() { fecharAviso("#modal-pix"); const d = pixAtual && pixAtual.depois; pixAtual = null; if (d) d(); }
 $("#pix-copiar").addEventListener("click", async () => {
-  try { await navigator.clipboard.writeText(pixAtual.pix.payload); toast("Código PIX copiado. Envie ao comprador para ele colar no app do banco."); }
+  try { await navigator.clipboard.writeText(pixAtual.pix.payload); toast("Código PIX copiado. Envie para quem vai pagar colar no app do banco."); }
   catch { toast("Não foi possível copiar."); }
 });
-$("#pix-depois").addEventListener("click", () => { toast("PIX pendente. Confirme depois na aba Minhas vendas."); fecharPix(); });
+$("#pix-depois").addEventListener("click", () => { toast((pixAtual && pixAtual.opt.msgDepois) || "PIX pendente. Confirme depois na aba Minhas vendas."); fecharPix(); });
 $("#pix-ok").addEventListener("click", async () => {
   if (!pixAtual || !sessao) return;
   const bt = $("#pix-ok"); bt.disabled = true; bt.textContent = "Confirmando…";
-  try { await store.confirmarPix(sessao.nome, sessao.pin, pixAtual.ms); toast("PIX confirmado! 💚"); fecharPix(); }
+  try {
+    if (pixAtual.opt.onConfirm) await pixAtual.opt.onConfirm();
+    else { await store.confirmarPix(sessao.nome, sessao.pin, pixAtual.ms); toast("PIX confirmado! 💚"); }
+    fecharPix();
+  }
   catch (e) { $("#erro-pix").textContent = e.message || "Não foi possível confirmar."; bt.disabled = false; bt.textContent = "✅ Confirmar recebimento"; }
 });
 
@@ -1251,11 +1259,20 @@ $("#rec-salvar").addEventListener("click", async () => {
   if (!recebendo) return;
   if (!(valor > 0)) { er.textContent = "Informe o valor recebido."; return; }
   if (valor > recebendo.pend + 0.001) { er.textContent = `O valor passa do pendente (${brl(recebendo.pend)}).`; return; }
-  bt.disabled = true; bt.textContent = "Salvando…";
-  try {
-    prestacoes = await store.receber({ vendedor: recebendo.nome, valor, forma: ($("input[name=rec-forma]:checked") || {}).value || "Dinheiro", obs: $("#rec-obs").value.trim() }, sessao.pin);
-    toast(`Recebido ${brl(valor)} de ${primeiroNome(recebendo.nome)}.`);
+  const forma = ($("input[name=rec-forma]:checked") || {}).value || "Dinheiro", obs = $("#rec-obs").value.trim(), quem = recebendo;
+  const registrar = async () => {
+    prestacoes = await store.receber({ vendedor: quem.nome, valor, forma, obs }, sessao.pin);
+    toast(`Recebido ${brl(valor)} de ${nomeCurto(quem.nome)}.`);
     recebendo = null; $("#form-receber").hidden = true; renderContas();
+  };
+  bt.disabled = true; bt.textContent = forma === "PIX" ? "Gerando QR Code…" : "Salvando…";
+  try {
+    if (forma === "PIX") {
+      // QR Code da conta do recebedor; a baixa só acontece depois de ele confirmar
+      const r = await store.pixPrestacao({ vendedor: quem.nome, valor }, sessao.pin);
+      abrirPix(null, r.pix, null, { titulo: "⚡ Prestação de contas via PIX", sub: `De ${quem.nome}`, quemPaga: "de " + nomeCurto(quem.nome),
+        labelDepois: "Cancelar", msgDepois: "Recebimento não registrado.", onConfirm: registrar });
+    } else await registrar();
   } catch (e) { er.textContent = e.message || "Não foi possível salvar."; }
   finally { bt.disabled = false; bt.textContent = "✔ Confirmar recebimento"; }
 });

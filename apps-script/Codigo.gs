@@ -109,14 +109,30 @@ function crc16_(s) {
   }
   return ('000' + c.toString(16).toUpperCase()).slice(-4);
 }
-function pix_(valor, mesas) {
-  if (!PIX_CHAVE) throw new Error('Chave PIX não configurada.');
-  const txid = ('FP26M' + mesas.join('M')).replace(/[^A-Za-z0-9]/g, '').slice(0, 25);
+// Chave de quem recebe a prestação de contas (também só aqui no Apps Script)
+const PIX_CHAVE_RECEBEDOR = '';
+const PIX_NOME_RECEBEDOR = 'CARLOS ANDRE ALONSO DA SILVA';
+// Nome no QR tem no máximo 25 letras: abrevia os nomes do meio
+function nome25_(n) {
+  if (n.length <= 25) return n;
+  const p = n.split(' ');
+  return [p[0]].concat(p.slice(1, -1).map(function (x) { return x.length <= 2 ? x : x[0]; }), [p[p.length - 1]]).join(' ').slice(0, 25);
+}
+function pixCom_(chave, nome, valor, txid) {
+  if (!chave) throw new Error('Chave PIX não configurada.');
+  txid = String(txid).replace(/[^A-Za-z0-9]/g, '').slice(0, 25);
   const s = emv_('00', '01') + emv_('01', '11') +
-    emv_('26', emv_('00', 'br.gov.bcb.pix') + emv_('01', PIX_CHAVE)) +
+    emv_('26', emv_('00', 'br.gov.bcb.pix') + emv_('01', chave)) +
     emv_('52', '0000') + emv_('53', '986') + emv_('54', Number(valor).toFixed(2)) + emv_('58', 'BR') +
-    emv_('59', PIX_NOME.slice(0, 25)) + emv_('60', PIX_CIDADE.slice(0, 15)) + emv_('62', emv_('05', txid)) + '6304';
-  return { payload: s + crc16_(s), valor: Number(valor), recebedor: PIX_NOME };
+    emv_('59', nome25_(nome)) + emv_('60', PIX_CIDADE.slice(0, 15)) + emv_('62', emv_('05', txid)) + '6304';
+  return { payload: s + crc16_(s), valor: Number(valor), recebedor: nome };
+}
+function pix_(valor, mesas) { return pixCom_(PIX_CHAVE, PIX_NOME, valor, 'FP26M' + mesas.join('M')); }
+// Quanto um vendedor ainda tem para prestar de contas
+function pendente_(vendas, nome) {
+  const vendido = vendas.filter(function (x) { return x.vendedor === nome; }).reduce(function (s, x) { return s + x.valor; }, 0);
+  const recebido = lerPrest_().filter(function (p) { return p.vendedor === nome; }).reduce(function (s, p) { return s + p.valor; }, 0);
+  return Math.round((vendido - recebido) * 100) / 100;
 }
 // Confere se as mesas são uma venda PIX do próprio vendedor
 function vendaPix_(vendas, nome, mesas) {
@@ -175,6 +191,15 @@ function doPost(e) {
         if (alvo.indexOf(Number(col[i][0])) >= 0) { sh.getRange(i + 1, 10).setValue(d.chegou ? new Date() : ''); achou++; }
       }
       if (!achou) throw new Error('Mesa sem venda registrada.');
+    } else if (d.acao === 'pixPrestacao') {
+      autentica_(TESOUREIRO, d.pin); // só o recebedor gera o QR da prestação de contas
+      const nome = String(d.vendedor || '');
+      if (nome === TESOUREIRO || !PIN_HASH[nome]) throw new Error('Vendedor inválido.');
+      const valor = Math.round(Number(d.valor) * 100) / 100;
+      if (!(valor > 0)) throw new Error('Informe o valor.');
+      const pend = pendente_(vendas, nome);
+      if (valor > pend + 0.001) throw new Error('O valor passa do pendente de ' + nome + ' (R$ ' + pend.toFixed(2).replace('.', ',') + ').');
+      pixResp = pixCom_(PIX_CHAVE_RECEBEDOR, PIX_NOME_RECEBEDOR, valor, 'FP26P' + Date.now().toString(36).toUpperCase());
     } else if (d.acao === 'pix') {
       autentica_(d.vendedor, d.pin);
       const ms = (d.mesas || []).map(Number);
