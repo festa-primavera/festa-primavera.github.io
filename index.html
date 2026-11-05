@@ -529,9 +529,7 @@ body.modal-aberto{overflow:hidden}
       <div class="card">
         <div class="card-head"><h2>Minhas vendas</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
         <div class="userbar-contas"><span>Vendedor(a): <b id="mv-nome"></b></span><button type="button" class="lnk" id="sair-mv">Sair</button></div>
-        <div class="contas-resumo">
-          <div><span>Mesas vendidas</span><b id="mv-mesas">0</b></div>
-          <div><span>Compradores</span><b id="mv-compradores">0</b></div>
+        <div class="contas-resumo" style="grid-template-columns:1fr">
           <div><span>Total vendido</span><b id="mv-total" class="ok">R$ 0,00</b></div>
         </div>
         <div class="nota" id="mv-nota"></div>
@@ -1174,8 +1172,6 @@ function renderMinhasVendas() {
   const din = minhas.filter((v) => v.pagamento === "Dinheiro").reduce((s, v) => s + (+v.valor || 0), 0);
   const pix = minhas.filter((v) => v.pagamento === "PIX").reduce((s, v) => s + (+v.valor || 0), 0);
   $("#mv-nome").textContent = nome;
-  $("#mv-mesas").textContent = minhas.length;
-  $("#mv-compradores").textContent = new Set(minhas.map((v) => v.comprador.trim().toUpperCase())).size;
   $("#mv-total").textContent = brl(din + pix);
   $("#mv-nota").textContent = minhas.length ? `💵 Dinheiro ${brl(din)} · ⚡ PIX ${brl(pix)}` : "";
   const q = norm($("#mv-busca").value.trim());
