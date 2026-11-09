@@ -282,11 +282,7 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 #comp-img{display:block;margin:0 auto;max-width:100%;width:auto;max-height:calc(100vh - 230px);height:auto;border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.35);background:#fff}
 .modal-dica{color:#fff;text-align:center;font-weight:700;font-size:14px;opacity:.9}
 .modal-acoes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.modal-acoes #comp-share,.modal-acoes #comp-fechar,.modal-acoes #comp-zap{grid-column:1/-1}
-#comp-zap{background:#1FAF5A;border-color:#1FAF5A;color:#fff}
-#comp-zap{flex-direction:column;gap:0;line-height:1.2}
-#comp-zap small{display:block;font-size:13px;opacity:.9;font-weight:700}
-.com-zap #comp-share{background:var(--paper);color:var(--green);border:1.5px solid var(--line);box-shadow:none}
+.modal-acoes #comp-share,.modal-acoes #comp-fechar{grid-column:1/-1}
 
 .modal-acoes .btn-ghost{background:#fff;border-color:#fff}
 body.modal-aberto{overflow:hidden}
@@ -691,14 +687,6 @@ body.modal-aberto{overflow:hidden}
         <button type="button" class="btn btn-primary btn-prox" data-prox>Próximo →</button>
       </section>
 
-      <section class="passo" data-passo="telefone">
-        <h3 class="pergunta"><label for="in-telefone">Qual é o WhatsApp do comprador?</label></h3>
-        <p class="passo-dica">Com DDD. O comprovante da mesa será enviado para este número.</p>
-        <input id="in-telefone" name="telefone" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(92) 99999-9999" enterkeyhint="next">
-        <div class="erro" data-erro-passo role="alert"></div>
-        <button type="button" class="btn btn-primary btn-prox" data-prox>Próximo →</button>
-      </section>
-
       <section class="passo" data-passo="aluno">
         <h3 class="pergunta"><label for="in-aluno">Qual é o nome do aluno?</label></h3>
         <p class="passo-dica">O(a) estudante da escola ligado(a) a esta compra.</p>
@@ -768,7 +756,6 @@ body.modal-aberto{overflow:hidden}
     <img id="comp-img" alt="Comprovante da mesa">
     <div class="modal-dica">Mostre a tela para o comprador fotografar, ou compartilhe a imagem.</div>
     <div class="modal-acoes">
-      <button type="button" class="btn btn-primary" id="comp-zap" hidden>📲 Enviar ao WhatsApp do comprador</button>
       <button type="button" class="btn btn-primary" id="comp-share">📤 Compartilhar imagem</button>
       <button type="button" class="btn btn-ghost" id="comp-fechar">Fechar</button>
     </div>
@@ -778,8 +765,8 @@ body.modal-aberto{overflow:hidden}
 
 <script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261109-1510";
-import { criarStore } from "./store.js?v=20261109-1510";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261109-1535";
+import { criarStore } from "./store.js?v=20261109-1535";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -832,7 +819,6 @@ $("#filtro-pag").innerHTML += PAGAMENTOS.map((p) => `<option>${p}</option>`).joi
 if (VALOR_MESA > 0) { const c = $("#valor"); c.type = "text"; c.value = brl(VALOR_MESA); c.readOnly = true; c.tabIndex = -1; }
 // Sessão do vendedor: nome + PIN conferidos pelo script do Google; guardados só neste aparelho
 let sessao = null;
-let telefones = {}; // telefones dos compradores: só chegam para o vendedor autenticado
 let prestacoes = [], recebendo = null, timerContas = null, contasPronto = false;
 try { sessao = JSON.parse(localStorage.getItem("fp-sessao")) || null; } catch {}
 if (sessao && !VENDEDORES.includes(sessao.nome)) sessao = null;
@@ -844,10 +830,10 @@ function mostrarSessao() {
   $("#sessao-nome").textContent = sessao ? sessao.nome : "";
   $("#vendedor").value = sessao ? sessao.nome : "";
   document.body.dataset.tesoureiro = sessao && sessao.nome === TESOUREIRO ? "1" : "";
-  if (contasPronto) { renderContas(); carregarContas(); vigiarContas(); renderMinhasVendas(); carregarTelefones(); }
+  if (contasPronto) { renderContas(); carregarContas(); vigiarContas(); renderMinhasVendas(); }
 }
 function sairSessao(msg) {
-  sessao = null; prestacoes = []; telefones = {}; vendas = []; try { localStorage.removeItem("fp-sessao"); } catch {}
+  sessao = null; prestacoes = []; vendas = []; try { localStorage.removeItem("fp-sessao"); } catch {}
   $("#pin").value = ""; escolherNome(""); mostrarSessao();
   if (msg) $("#erro-sessao").textContent = msg;
 }
@@ -1062,12 +1048,7 @@ async function desenharComprovante(v) {
   return fim;
 }
 async function abrirComprovante(v) {
-  const m = v.mesas || [v.mesa];
-  v = { ...v, telefone: v.telefone || m.map((x) => telefones[x]).find(Boolean) || "" };
   compAtual = v; compBlob = null;
-  const d = soDigitos(v.telefone);
-  $("#comp-zap").hidden = !d; $("#modal-comp").classList.toggle("com-zap", !!d);
-  $("#comp-zap").innerHTML = d ? `📲 Enviar no WhatsApp do comprador<small>${fmtTel(d)}</small>` : "";
   const c = await desenharComprovante(v);
   $("#comp-img").src = c.toDataURL("image/png");
   c.toBlob((b) => (compBlob = b), "image/png");
@@ -1142,21 +1123,6 @@ $("#comp-share").addEventListener("click", async () => {
   // Sem compartilhamento nativo (ex.: computador): baixa a imagem
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nome; document.body.appendChild(a); a.click(); a.remove();
   toast("Imagem do comprovante salva.");
-});
-// Copia a IMAGEM do comprovante e abre a conversa do comprador; lá é só colar e enviar
-$("#comp-zap").addEventListener("click", async () => {
-  if (!compAtual) return;
-  const d = soDigitos(compAtual.telefone);
-  const conversa = window.open("about:blank", "_blank");
-  let copiou = false;
-  try {
-    const blob = compBlob || await (await fetch($("#comp-img").src)).blob();
-    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); copiou = true;
-  } catch {}
-  const url = `https://wa.me/55${d}`;
-  if (conversa) conversa.location = url; else location.href = url;
-  toast(copiou ? "Imagem copiada! No WhatsApp, toque e segure no campo de mensagem → Colar → Enviar."
-    : "Abra a conversa e use “Compartilhar imagem” para enviar o comprovante.");
 });
 
 // ------------------------------------------------------------ dados
@@ -1425,7 +1391,6 @@ $("#mv-lista").addEventListener("click", async (e) => {
 });
 renderMinhasVendas();
 
-carregarTelefones();
 store.onVendas((l) => { vendas = l; pintarMesas(); renderMinhasVendas(); renderVendedores(); renderLista(); renderContas(); },
   (e) => toast("Não foi possível carregar as vendas: " + e.message));
 
@@ -1463,17 +1428,8 @@ function marcarMesa() {
 }
 // Depois de escolher a mesa: se o vendedor ainda não se identificou, vai para a identificação;
 // se já se identificou, vai direto para o nome do comprador.
-// ------------------------------------------------------------ telefone (WhatsApp) do comprador
-const soDigitos = (t) => String(t || "").replace(/\D/g, "").slice(0, 11);
-const fmtTel = (t) => { const d = soDigitos(t); if (d.length < 3) return d; return `(${d.slice(0, 2)}) ` + (d.length > 10 ? d.slice(2, 7) + "-" + d.slice(7) : d.length > 6 ? d.slice(2, 6) + "-" + d.slice(6) : d.slice(2)); };
-$("#in-telefone").addEventListener("input", (e) => { e.target.value = fmtTel(e.target.value); });
-async function carregarTelefones() {
-  if (!sessao || !store.telefones) return;
-  try { const r = await store.telefones(sessao.nome, sessao.pin); telefones = { ...telefones, ...(r.telefones || {}) }; } catch {}
-}
-
 // ------------------------------------------------------------ assistente de venda (um dado por vez)
-const PASSOS = ["vendedor", "comprador", "telefone", "aluno", "serie", "pagamento", "revisao"];
+const PASSOS = ["vendedor", "comprador", "aluno", "serie", "pagamento", "revisao"];
 let passoAtual = "comprador", passosVenda = PASSOS, editando = false;
 const passosVisiveis = () => passosVenda;
 function infoAssistente() {
@@ -1489,7 +1445,7 @@ function irPasso(p, volta) {
   $("#ass-barra").style.width = ((i + 1) / vis.length) * 100 + "%";
   infoAssistente();
   if (p === "revisao") montarRevisao();
-  const foco = { vendedor: sessao ? null : ($("#sel-vendedor").value ? "#pin" : "#lista-vend .nome-btn"), comprador: "#in-comprador", telefone: "#in-telefone", aluno: "#in-aluno" }[p];
+  const foco = { vendedor: sessao ? null : ($("#sel-vendedor").value ? "#pin" : "#lista-vend .nome-btn"), comprador: "#in-comprador", aluno: "#in-aluno" }[p];
   $("#form-venda").scrollTop = 0;
   if (foco) setTimeout(() => $(foco) && $(foco).focus({ preventScroll: true }), 320);
 }
@@ -1505,7 +1461,6 @@ const valorDe = (n) => (($(`#form-venda [name=${n}]:checked`) || {}).value) || "
 function validaPasso(p) {
   const f = $("#form-venda").elements;
   if (p === "comprador" && !f.comprador.value.trim()) return "Digite o nome do comprador.";
-  if (p === "telefone" && ![10, 11].includes(soDigitos(f.telefone.value).length)) return "Digite o WhatsApp com DDD, ex.: (92) 99999-9999.";
   if (p === "aluno" && !f.aluno.value.trim()) return "Digite o nome do aluno.";
   if (p === "serie" && !valorDe("serie")) return "Toque na série do aluno.";
   if (p === "serie" && !valorDe("turma")) return "Toque na turma do aluno.";
@@ -1527,7 +1482,6 @@ function montarRevisao() {
   const linhas = [
     ["Mesa" + (n > 1 ? "s" : ""), n > 1 ? listaMesas(selecionadas) : selecionadas[0], null],
     ["Comprador", f.comprador.value.trim().toUpperCase(), "comprador"],
-    ["WhatsApp", fmtTel(f.telefone.value), "telefone"],
     ["Aluno", f.aluno.value.trim().toUpperCase(), "aluno"],
     ["Série e turma", `${valorDe("serie")} ${valorDe("turma")}`, "serie"],
     ["Pagamento", valorDe("pagamento"), "pagamento"],
@@ -1545,7 +1499,7 @@ $("#ass-voltar").addEventListener("click", voltar);
 $("#form-venda").addEventListener("input", (e) => { const er = e.target.closest(".passo")?.querySelector("[data-erro-passo]"); if (er) er.textContent = ""; });
 $("#ass-fechar").addEventListener("click", fecharAssistente);
 $("#form-venda").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && e.target.matches("#in-comprador, #in-telefone, #in-aluno")) { e.preventDefault(); avancar(); }
+  if (e.key === "Enter" && e.target.matches("#in-comprador, #in-aluno")) { e.preventDefault(); avancar(); }
 });
 // pagamento: um toque já leva para a conferência
 $("#seg-pag").addEventListener("click", (e) => { if (e.target.closest("label")) setTimeout(() => passoAtual === "pagamento" && avancar(), 220); });
@@ -1570,12 +1524,12 @@ $("#form-venda").addEventListener("submit", async (e) => {
   const v = {
     mesas: [...selecionadas], valor: VALOR_MESA > 0 ? VALOR_MESA : Number(f.get("valor")),
     vendedor: f.get("vendedor"), comprador: (f.get("comprador") || "").trim().toUpperCase(),
-    aluno: (f.get("aluno") || "").trim().toUpperCase(), serie: f.get("serie"), telefone: fmtTel(f.get("telefone")),
+    aluno: (f.get("aluno") || "").trim().toUpperCase(), serie: f.get("serie"),
     turma: f.get("turma"), pagamento: f.get("pagamento"),
   };
   const faltando = [
     [!v.mesas.length, "a mesa"], [!(v.valor > 0), "o valor"],
-    [!v.comprador, "o nome do comprador"], [![10, 11].includes(soDigitos(v.telefone).length), "o WhatsApp do comprador"], [!v.aluno, "o nome do aluno"], [!v.serie, "a série"],
+    [!v.comprador, "o nome do comprador"], [!v.aluno, "o nome do aluno"], [!v.serie, "a série"],
     [!v.turma, "a turma"], [!v.pagamento, "a forma de pagamento"],
   ].filter(([x]) => x).map(([, t]) => t);
   if (!v.mesas.length) { fecharAssistente(); $("#mapa-vendas").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
@@ -1587,8 +1541,7 @@ $("#form-venda").addEventListener("submit", async (e) => {
   erro.textContent = ""; $("#salvar").disabled = true; $("#salvar").textContent = "Salvando…";
   try {
     const resp = await store.vender(v, sessao.pin);
-    v.mesas.forEach((m) => (telefones[m] = v.telefone));
-    ["comprador", "telefone", "aluno"].forEach((n) => (e.target.elements[n].value = ""));
+    ["comprador", "aluno"].forEach((n) => (e.target.elements[n].value = ""));
     e.target.elements.serie.value = "";
     $$("#form-venda input[type=radio]").forEach((r) => (r.checked = false));
     e.target.elements.mesa.value = ""; selecionadas = []; limpouSel = false; renderResumo();

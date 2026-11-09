@@ -1,5 +1,5 @@
 // Camada de dados: planilha do Google Drive (via Google Apps Script) ou modo demonstração
-import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261109-1510";
+import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261109-1535";
 
 export async function criarStore() {
   return APPS_SCRIPT_URL ? planilhaStore() : demoStore();
@@ -63,8 +63,6 @@ function planilhaStore() {
     prestacoes: async (pin) => (await enviar({ acao: "prestacoes", pin })).prestacoes || [],
     receber: async (r, pin) => (await enviar({ acao: "receber", ...r, pin })).prestacoes || [],
     estornar: async (id, pin) => (await enviar({ acao: "estornar", id, pin })).prestacoes || [],
-    // Telefones dos compradores: só do próprio vendedor, com o PIN
-    telefones: (vendedor, pin) => enviar({ acao: "telefones", vendedor, pin }),
     // QR Code da prestação de contas (conta do recebedor), só com o PIN dele
     pixPrestacao: (r, pin) => enviar({ acao: "pixPrestacao", ...r, pin }),
     // PIX: o código (QR) vem do servidor; só quem vendeu confirma o recebimento
@@ -110,7 +108,6 @@ function demoStore() {
     async pix(nome, pin, mesas) { return { pix: { payload: "DEMONSTRACAO-SEM-CHAVE-PIX", valor: 50 * mesas.length, recebedor: "(modo demonstração)" } }; },
     async confirmarPix(nome, pin, mesas) { gravar(ler().map((x) => mesas.includes(x.mesa) ? { ...x, pixOk: new Date().toISOString() } : x)); },
     async pixPrestacao(r) { return { pix: { payload: "DEMONSTRACAO-SEM-CHAVE-PIX", valor: r.valor, recebedor: "(modo demonstração)" } }; },
-    async telefones(nome) { const t = {}; ler().forEach((x) => { if (x.vendedor === nome && x.telefone) t[x.mesa] = x.telefone; }); return { telefones: t }; },
     async minhas(nome) { return lerP().filter((p) => p.vendedor === nome); },
     async estornar(id) { const l = lerP().filter((p) => p.id !== id); gravarP(l); return l; },
     async chegada(mesas, chegou) {

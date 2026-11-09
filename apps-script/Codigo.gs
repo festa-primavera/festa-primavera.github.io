@@ -184,7 +184,7 @@ function doPost(e) {
       if (TURMAS.indexOf(v.turma) < 0) throw new Error('Turma inválida.');
       if (!String(v.comprador || '').trim() || !String(v.aluno || '').trim())
         throw new Error('Preencha comprador e aluno.');
-      const tel = telefone_(v.telefone);
+      const tel = v.telefone ? telefone_(v.telefone) : ''; // telefone é opcional
       const agora = new Date();
       const linhas = mesas.map(function (m) {
         return [m, texto_(v.comprador), texto_(v.aluno), texto_(v.serie), v.turma,
