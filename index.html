@@ -775,6 +775,8 @@ const brl = (n) => (Number(n) || 0).toLocaleString("pt-BR", { style: "currency",
 const CORES = ["#D81F5A", "#0E9F84", "#E59400", "#0798D7", "#7B4FD0"];
 const iniciais = (n) => n.split(" ").filter((p) => p.length > 2).slice(0, 1).concat(n.split(" ").slice(-1)).map((p) => p[0]).join("");
 const primeiroNome = (n) => n.split(" ")[0][0] + n.split(" ")[0].slice(1).toLowerCase();
+// Na tela aparece só o primeiro nome do vendedor (o nome completo continua sendo a identificação)
+const nomeCurto = (n) => (n ? ({ "MARCIA": "Márcia" }[n.split(" ")[0]] || primeiroNome(n)) : "");
 
 let vendidas = [], vendas = [], selecionadas = [], anteriores = new Set(), primeiraCarga = true;
 
@@ -801,7 +803,7 @@ function rota() {
 window.addEventListener("hashchange", rota); rota();
 
 // ------------------------------------------------------------ formulário (opções)
-$("#lista-vend").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(v)}</button>`).join("");
+$("#lista-vend").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(nomeCurto(v))}</button>`).join("");
 function escolherNome(nome) {
   $("#sel-vendedor").value = nome;
   $$("#lista-vend .nome-btn").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.nome === nome)));
@@ -827,7 +829,7 @@ function mostrarSessao() {
   $("#rc-login").hidden = !!sessao; $("#rc-painel").hidden = !sessao; $("#card-recebido").hidden = !sessao;
   try { renderLegenda(); } catch {} // no início da página a legenda é montada logo adiante
   $("#sessao-on").hidden = !sessao; $("#sessao-off").hidden = !!sessao;
-  $("#sessao-nome").textContent = sessao ? sessao.nome : "";
+  $("#sessao-nome").textContent = sessao ? nomeCurto(sessao.nome) : "";
   $("#vendedor").value = sessao ? sessao.nome : "";
   document.body.dataset.tesoureiro = sessao && sessao.nome === TESOUREIRO ? "1" : "";
   if (contasPronto) { renderContas(); carregarContas(); vigiarContas(); renderMinhasVendas(); }
@@ -875,7 +877,6 @@ function renderResumo() {
 }
 // Cada mesa vendida fica com a cor de quem vendeu
 const corVend = (nome) => { const i = VENDEDORES.indexOf(nome); return i >= 0 ? CORES[i % CORES.length] : "#8FA5AA"; };
-const nomeCurto = (n) => ({ "MARCIA": "Márcia" }[n.split(" ")[0]] || primeiroNome(n));
 function pintarMesas() {
   const dono = new Map(vendas.map((v) => [Number(v.mesa), v.vendedor]));
   $$(".mapa .mesa.vendida").forEach((x) => {
@@ -896,7 +897,7 @@ function renderVendedores() {
     const pix = minhas.filter((v) => v.pagamento === "PIX").reduce((s, v) => s + (+v.valor || 0), 0);
     tot.Dinheiro += din; tot.PIX += pix;
     return `<div class="vend">
-      <div class="nome"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(nome))}</span>${esc(nome)}</div>
+      <div class="nome"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(nome))}</span>${esc(nomeCurto(nome))}</div>
       <div class="total">${brl(din + pix)}</div>
       <div class="split"><span>${minhas.length} mesa${minhas.length === 1 ? "" : "s"}</span><span>💵 <b>${brl(din)}</b></span><span>⚡ <b>${brl(pix)}</b></span></div>
       ${((u) => u ? `<div class="ultima">Última venda: ${quando(u)}</div>` : "")(minhas.map((x) => x.criadoEm).filter(valida).sort((a, b) => new Date(b) - new Date(a))[0])}
@@ -939,7 +940,7 @@ function renderLista() {
     <div class="vi">
       <b>${marca(v.comprador)}</b>
       <span>Aluno: ${marca(v.aluno)} · ${esc(v.serie)} ${esc(v.turma)}</span>
-      <span>${esc(v.pagamento)} · ${brl(v.valor)} · vendida por ${esc(primeiroNome(v.vendedor))}${v.pagamento === "PIX" ? (valida(v.pixOk) ? ' · <b class="pix-ok">PIX confirmado</b>' : ' · <b class="pix-pend">PIX a confirmar</b>') : ""}</span>
+      <span>${esc(v.pagamento)} · ${brl(v.valor)} · vendida por ${esc(nomeCurto(v.vendedor))}${v.pagamento === "PIX" ? (valida(v.pixOk) ? ' · <b class="pix-ok">PIX confirmado</b>' : ' · <b class="pix-pend">PIX a confirmar</b>') : ""}</span>
       ${valida(v.criadoEm) ? `<span>🕒 Vendida em ${quando(v.criadoEm)}</span>` : ""}
       ${grupoDe(v).length > 1 ? `<span class="grupo">Comprou ${grupoDe(v).length} mesas: ${listaMesas(grupoDe(v).map((x) => x.mesa))}</span>` : ""}
     </div>
@@ -971,7 +972,7 @@ E.M. Dep. Federal Ulisses Guimarães — 12/11/2026
 Comprador: ${v.comprador}
 Aluno: ${v.aluno} (${v.serie} ${v.turma})
 Pagamento: ${v.pagamento} — ${brl(v.total ?? v.valor)}
-Vendedor(a): ${v.vendedor}${valida(v.criadoEm) ? `
+Vendedor(a): ${nomeCurto(v.vendedor)}${valida(v.criadoEm) ? `
 Data da compra: ${new Date(v.criadoEm).toLocaleDateString("pt-BR", { timeZone: "America/Manaus" })} às ${new Date(v.criadoEm).toLocaleTimeString("pt-BR", { timeZone: "America/Manaus", hour: "2-digit", minute: "2-digit" })}` : ""}
 
 📌 O número da mesa é só para controle das vendas. No dia da festa, as mesas são ocupadas por ordem de chegada.`;
@@ -1026,7 +1027,7 @@ async function desenharComprovante(v) {
   linha("Comprador", v.comprador);
   linha("Aluno", `${v.aluno} · ${v.serie} ${v.turma}`);
   linha("Pagamento", `${v.pagamento} — ${brl(v.total ?? v.valor)}`, "#0E9F84");
-  linha("Vendedor(a)", v.vendedor);
+  linha("Vendedor(a)", nomeCurto(v.vendedor));
   if (valida(v.criadoEm)) linha("Data da compra", new Date(v.criadoEm).toLocaleDateString("pt-BR", TZ) + " às " + hora(v.criadoEm));
   // picote + rodapé
   const yp = y + 10;
@@ -1144,7 +1145,7 @@ $("#entrar-vend").addEventListener("click", async () => {
   try {
     await store.entrar(nome, pin);
     sessao = { nome, pin }; try { localStorage.setItem("fp-sessao", JSON.stringify(sessao)); } catch {}
-    $("#pin").value = ""; mostrarSessao(); toast(`Olá, ${primeiroNome(nome)}! Vendas serão registradas no seu nome.`);
+    $("#pin").value = ""; mostrarSessao(); toast(`Olá, ${nomeCurto(nome)}! Vendas serão registradas no seu nome.`);
     if (!$("#assistente").hidden) { if (editando) { editando = false; irPasso("revisao"); } else irPasso("comprador"); }
   } catch (e) { er.textContent = e.message || "Não foi possível conferir o PIN."; }
   finally { bt.disabled = false; bt.textContent = "Entrar"; }
@@ -1153,10 +1154,10 @@ $("#pin").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preven
 
 // ------------------------------------------------------------ prestação de contas (só o recebedor)
 contasPronto = true;
-$$("[data-nome-tesoureiro]").forEach((e) => (e.textContent = TESOUREIRO));
+$$("[data-nome-tesoureiro]").forEach((e) => (e.textContent = nomeCurto(TESOUREIRO)));
 $("#seg-rec-forma").innerHTML = PAGAMENTOS.map((p, i) => `<input type="radio" name="rec-forma" id="rf${i}" value="${p}"${i === 0 ? " checked" : ""}><label for="rf${i}">${p === "PIX" ? "⚡ PIX" : "💵 Dinheiro"}</label>`).join("");
 const ehTesoureiro = () => !!sessao && sessao.nome === TESOUREIRO;
-$("#lista-vend-contas").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(v)}</button>`).join("");
+$("#lista-vend-contas").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(nomeCurto(v))}</button>`).join("");
 $("#lista-vend-contas").addEventListener("click", (e) => {
   const b = e.target.closest(".nome-btn"); if (!b) return;
   $("#sel-vend-contas").value = b.dataset.nome;
@@ -1170,12 +1171,12 @@ function renderMinha() {
   const pix = minhas.filter((v) => v.pagamento === "PIX").reduce((s, v) => s + (+v.valor || 0), 0);
   const ps = ordemPrest(prestacoes.filter((p) => p.vendedor === nome));
   const vendido = din + pix, prest = ps.reduce((s, p) => s + (+p.valor || 0), 0), falta = Math.round((vendido - prest) * 100) / 100;
-  $("#mc-nome").textContent = nome;
+  $("#mc-nome").textContent = nomeCurto(nome);
   $("#mc-vendido").textContent = brl(vendido); $("#mc-prestado").textContent = brl(prest); $("#mc-falta").textContent = brl(Math.max(0, falta));
   $("#mc-barra").style.width = (vendido ? Math.min(100, (prest / vendido) * 100) : 0) + "%";
   $("#mc-nota").innerHTML = `${minhas.length} mesa${minhas.length === 1 ? "" : "s"} vendida${minhas.length === 1 ? "" : "s"} · 💵 ${brl(din)} · ⚡ ${brl(pix)}<br>` +
-    (vendido === 0 ? "Você ainda não tem vendas." : falta <= 0 ? "✅ Contas acertadas com " + esc(TESOUREIRO) + "."
-      : `Entregue <b>${brl(falta)}</b> a ${esc(TESOUREIRO)}. Ele registra cada entrega e ela aparece aqui.`);
+    (vendido === 0 ? "Você ainda não tem vendas." : falta <= 0 ? "✅ Contas acertadas com " + esc(nomeCurto(TESOUREIRO)) + "."
+      : `Entregue <b>${brl(falta)}</b> a ${esc(nomeCurto(TESOUREIRO))}. Ele registra cada entrega e ela aparece aqui.`);
   $("#mc-hist").innerHTML = ps.length ? ps.map((p, i) => `<div class="hist">
       <b><span class="n">${i + 1}ª</span>${esc(p.forma)}</b><div class="v">${brl(p.valor)}</div>
       <span>📅 ${valida(p.quando) ? new Date(p.quando).toLocaleDateString("pt-BR", TZ) + " às " + hora(p.quando) : ""}${p.obs ? " · " + esc(p.obs) : ""}</span>
@@ -1211,7 +1212,7 @@ function renderContas() {
   $("#contas-vendedores").innerHTML = l.map((x) => {
     const i = VENDEDORES.indexOf(x.nome);
     return `<div class="cv${x.vendido > 0 && x.pend <= 0 ? " quitado" : ""}">
-      <div class="cv-top"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(x.nome))}</span><b>${esc(x.nome)}</b></div>
+      <div class="cv-top"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(x.nome))}</span><b>${esc(nomeCurto(x.nome))}</b></div>
       <div class="cv-num"><div>Vendeu<b>${brl(x.vendido)}</b></div><div class="ok">Entregou<b>${brl(x.rec)}</b></div><div class="pend">Falta<b>${brl(Math.max(0, x.pend))}</b></div></div>
       <div class="cv-split">${x.mesas} mesa${x.mesas === 1 ? "" : "s"} · 💵 ${brl(x.din)} · ⚡ ${brl(x.pix)}${x.pend < 0 ? ` · ⚠️ recebido ${brl(-x.pend)} a mais (venda cancelada?)` : ""}</div>
       ${((ps) => ps.length ? `<details data-cv="${esc(x.nome)}"${abertos.has(x.nome) ? " open" : ""}><summary>Ver ${ps.length} prestaç${ps.length === 1 ? "ão" : "ões"} (data e horário)</summary>${ps.map((p, k) => `<div class="mini"><span>${k + 1}ª · ${quando(p.quando)} · ${esc(p.forma)}</span><b>${brl(p.valor)}</b></div>`).join("")}</details>` : "")(ordemPrest(prestacoes.filter((p) => p.vendedor === x.nome)))}
@@ -1221,7 +1222,7 @@ function renderContas() {
   }).join("");
   const h = [...prestacoes].sort((a, b) => new Date(b.quando) - new Date(a.quando));
   $("#contas-historico").innerHTML = h.length ? h.map((p) => `<div class="hist">
-      <b>${esc(primeiroNome(p.vendedor))} · ${esc(p.forma)}</b><div class="v">${brl(p.valor)}</div>
+      <b>${esc(nomeCurto(p.vendedor))} · ${esc(p.forma)}</b><div class="v">${brl(p.valor)}</div>
       <span>${quando(p.quando)}${p.obs ? " · " + esc(p.obs) : ""}</span><button type="button" class="lnk del" data-estornar="${esc(p.id)}">Desfazer</button>
     </div>`).join("") : `<div class="vazio">Nenhum recebimento registrado ainda.</div>`;
 }
@@ -1255,7 +1256,7 @@ $("#contas-vendedores").addEventListener("click", (e) => {
   const b = e.target.closest("[data-receber]"); if (!b) return;
   const x = contasPorVendedor().find((y) => y.nome === b.dataset.receber); if (!x) return;
   recebendo = x;
-  $("#rec-nome").textContent = x.nome; $("#rec-pendente").textContent = brl(x.pend);
+  $("#rec-nome").textContent = nomeCurto(x.nome); $("#rec-pendente").textContent = brl(x.pend);
   $("#rec-valor").value = x.pend.toFixed(2); $("#rec-obs").value = ""; $("#erro-receber").textContent = "";
   $("#form-receber").hidden = false; $("#form-receber").scrollIntoView({ behavior: "smooth", block: "start" });
   setTimeout(() => $("#rec-valor").focus({ preventScroll: true }), 350);
@@ -1278,7 +1279,7 @@ $("#rec-salvar").addEventListener("click", async () => {
     if (forma === "PIX") {
       // QR Code da conta do recebedor; a baixa só acontece depois de ele confirmar
       const r = await store.pixPrestacao({ vendedor: quem.nome, valor }, sessao.pin);
-      abrirPix(null, r.pix, null, { titulo: "⚡ Prestação de contas via PIX", sub: `De ${quem.nome}`, quemPaga: "de " + nomeCurto(quem.nome),
+      abrirPix(null, r.pix, null, { titulo: "⚡ Prestação de contas via PIX", sub: `De ${nomeCurto(quem.nome)}`, quemPaga: "de " + nomeCurto(quem.nome),
         labelDepois: "Cancelar", msgDepois: "Recebimento não registrado.", onConfirm: registrar });
     } else await registrar();
   } catch (e) { er.textContent = e.message || "Não foi possível salvar."; }
@@ -1296,7 +1297,7 @@ $("#contas-historico").addEventListener("click", async (e) => {
 carregarContas(); vigiarContas();
 
 // ------------------------------------------------------------ login da Recepção
-$("#lista-vend-rc").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(v)}</button>`).join("");
+$("#lista-vend-rc").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(nomeCurto(v))}</button>`).join("");
 $("#lista-vend-rc").addEventListener("click", (e) => {
   const b = e.target.closest(".nome-btn"); if (!b) return;
   $("#sel-vend-rc").value = b.dataset.nome;
@@ -1318,7 +1319,7 @@ $("#entrar-rc").addEventListener("click", async () => {
 $("#pin-rc").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#entrar-rc").click(); } });
 
 // ------------------------------------------------------------ minhas vendas (cada vendedor)
-$("#lista-vend-mv").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(v)}</button>`).join("");
+$("#lista-vend-mv").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(nomeCurto(v))}</button>`).join("");
 $("#lista-vend-mv").addEventListener("click", (e) => {
   const b = e.target.closest(".nome-btn"); if (!b) return;
   $("#sel-vend-mv").value = b.dataset.nome;
@@ -1354,7 +1355,7 @@ function renderMinhasVendas() {
     .sort((a, b) => new Date(b[0].criadoEm) - new Date(a[0].criadoEm));
   const din = minhas.filter((v) => v.pagamento === "Dinheiro").reduce((s, v) => s + (+v.valor || 0), 0);
   const pix = minhas.filter((v) => v.pagamento === "PIX").reduce((s, v) => s + (+v.valor || 0), 0);
-  $("#mv-nome").textContent = nome;
+  $("#mv-nome").textContent = nomeCurto(nome);
   $("#mv-total").textContent = brl(din + pix);
   $("#mv-nota").textContent = minhas.length ? `💵 Dinheiro ${brl(din)} · ⚡ PIX ${brl(pix)}` : "";
   const q = norm($("#mv-busca").value.trim());
@@ -1485,7 +1486,7 @@ function montarRevisao() {
     ["Aluno", f.aluno.value.trim().toUpperCase(), "aluno"],
     ["Série e turma", `${valorDe("serie")} ${valorDe("turma")}`, "serie"],
     ["Pagamento", valorDe("pagamento"), "pagamento"],
-    ["Vendedor(a)", sessao ? sessao.nome : "", "trocar"],
+    ["Vendedor(a)", sessao ? nomeCurto(sessao.nome) : "", "trocar"],
   ];
   $("#revisao").innerHTML = linhas.map(([r, v, p]) => `<div><dt>${r}</dt><dd>${esc(v)}</dd>${p ? `<button type="button" class="lnk" data-ir="${p}">Alterar</button>` : ""}</div>`).join("") +
     `<div class="total"><dt>Total a receber</dt><dd>${brl(VALOR_MESA * n)}</dd></div>`;
@@ -1582,7 +1583,7 @@ $("#lista").addEventListener("click", async (e) => {
     }
     {
       if (!sessao) { toast("Para cancelar, entre com seu nome e PIN na aba Vender mesa."); return; }
-      if (sessao.nome !== v.vendedor) { toast(`Só ${primeiroNome(v.vendedor)} pode cancelar esta venda.`); return; }
+      if (sessao.nome !== v.vendedor) { toast(`Só ${nomeCurto(v.vendedor)} pode cancelar esta venda.`); return; }
       try { await store.cancelar(v.mesa, sessao.pin); toast(`Venda da mesa ${v.mesa} cancelada.`); }
       catch (err) { toast("Erro ao cancelar: " + err.message); }
     }
