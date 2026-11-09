@@ -24,6 +24,7 @@ export const VENDEDORES = [
   "MARINETE DA CONCEICAO TELES GONZAGA",
   "MARCIA MENEZES GOMES",
   "CARLOS ANDRE ALONSO DA SILVA",
+  "ADNEY OLIVEIRA AMORIM",
 ];
 
 // Quem recebe o dinheiro das vendas (prestação de contas). As vendas dele mesmo não entram.

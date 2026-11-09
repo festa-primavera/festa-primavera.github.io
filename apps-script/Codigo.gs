@@ -34,6 +34,7 @@ function lerVendas_() {
         criadoEm: iso_(r[8]),
         chegada: iso_(r[9]),
         pixOk: iso_(r[10]),
+        telefone: String(r[11] || ''),
       };
     });
 }
@@ -143,8 +144,16 @@ function vendaPix_(vendas, nome, mesas) {
   return g;
 }
 
+// Telefones dos compradores nunca saem na lista pública
+function semTel_(l) { return l.map(function (x) { const y = Object.assign({}, x); delete y.telefone; return y; }); }
+function telefone_(t) {
+  const d = String(t || '').replace(/\D/g, '');
+  if (d.length !== 10 && d.length !== 11) throw new Error('Telefone inválido: informe DDD + número.');
+  return '(' + d.slice(0, 2) + ') ' + (d.length === 11 ? d.slice(2, 7) + '-' + d.slice(7) : d.slice(2, 6) + '-' + d.slice(6));
+}
+
 function doGet() {
-  return json_({ ok: true, vendas: lerVendas_() });
+  return json_({ ok: true, vendas: semTel_(lerVendas_()) });
 }
 
 function doPost(e) {
@@ -154,7 +163,7 @@ function doPost(e) {
     const d = JSON.parse(e.postData.contents);
     const sh = aba_();
     const vendas = lerVendas_();
-    let pixResp = null;
+    let pixResp = null, telResp = null;
 
     if (d.acao === 'entrar') {
       autentica_(d.vendedor, d.pin);
@@ -174,12 +183,16 @@ function doPost(e) {
       if (TURMAS.indexOf(v.turma) < 0) throw new Error('Turma inválida.');
       if (!String(v.comprador || '').trim() || !String(v.aluno || '').trim())
         throw new Error('Preencha comprador e aluno.');
+      const tel = telefone_(v.telefone);
       const agora = new Date();
       const linhas = mesas.map(function (m) {
         return [m, texto_(v.comprador), texto_(v.aluno), texto_(v.serie), v.turma,
           v.pagamento, Number(v.valor), texto_(v.vendedor), agora];
       });
-      sh.getRange(sh.getLastRow() + 1, 1, linhas.length, 9).setValues(linhas);
+      const ini = sh.getLastRow() + 1;
+      sh.getRange(ini, 1, linhas.length, 9).setValues(linhas);
+      if (sh.getRange(1, 12).getValue() === '') sh.getRange(1, 12).setValue('Telefone');
+      sh.getRange(ini, 12, linhas.length, 1).setNumberFormat('@').setValues(linhas.map(function () { return [tel]; }));
       if (v.pagamento === 'PIX' && PIX_CHAVE) pixResp = pix_(Number(v.valor) * mesas.length, mesas);
     } else if (d.acao === 'chegada') {
       // Recepção no dia da festa: marca (ou desmarca) a chegada do comprador
@@ -200,6 +213,10 @@ function doPost(e) {
       const pend = pendente_(vendas, nome);
       if (valor > pend + 0.001) throw new Error('O valor passa do pendente de ' + nome + ' (R$ ' + pend.toFixed(2).replace('.', ',') + ').');
       pixResp = pixCom_(PIX_CHAVE_RECEBEDOR, PIX_NOME_RECEBEDOR, valor, 'FP26P' + Date.now().toString(36).toUpperCase());
+    } else if (d.acao === 'telefones') {
+      autentica_(d.vendedor, d.pin); // cada vendedor vê só os telefones dos próprios compradores
+      telResp = {};
+      vendas.forEach(function (x) { if (x.vendedor === d.vendedor && x.telefone) telResp[x.mesa] = x.telefone; });
     } else if (d.acao === 'pix') {
       autentica_(d.vendedor, d.pin);
       const ms = (d.mesas || []).map(Number);
@@ -251,8 +268,9 @@ function doPost(e) {
       throw new Error('Ação desconhecida.');
     }
     SpreadsheetApp.flush();
-    const resp = { ok: true, vendas: lerVendas_() };
+    const resp = { ok: true, vendas: semTel_(lerVendas_()) };
     if (pixResp) resp.pix = pixResp;
+    if (telResp) resp.telefones = telResp;
     if (['prestacoes', 'receber', 'estornar'].indexOf(d.acao) >= 0) resp.prestacoes = lerPrest_();
     if (d.acao === 'minhas') resp.prestacoes = lerPrest_().filter(function (p) { return p.vendedor === d.vendedor; });
     return json_(resp);
