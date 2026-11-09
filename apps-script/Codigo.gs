@@ -153,7 +153,8 @@ function telefone_(t) {
 }
 
 function doGet() {
-  return json_({ ok: true, vendas: semTel_(lerVendas_()) });
+  // Sem PIN: só quais mesas estão vendidas (nenhum dado de comprador ou de venda)
+  return json_({ ok: true, mesas: lerVendas_().map(function (x) { return x.mesa; }) });
 }
 
 function doPost(e) {
@@ -195,6 +196,7 @@ function doPost(e) {
       sh.getRange(ini, 12, linhas.length, 1).setNumberFormat('@').setValues(linhas.map(function () { return [tel]; }));
       if (v.pagamento === 'PIX' && PIX_CHAVE) pixResp = pix_(Number(v.valor) * mesas.length, mesas);
     } else if (d.acao === 'chegada') {
+      autentica_(d.vendedor, d.pin); // só vendedores confirmam a chegada
       // Recepção no dia da festa: marca (ou desmarca) a chegada do comprador
       const alvo = (Array.isArray(d.mesas) ? d.mesas : [d.mesa]).map(Number);
       if (sh.getRange(1, 10).getValue() === '') sh.getRange(1, 10).setValue('Chegada');
@@ -213,6 +215,8 @@ function doPost(e) {
       const pend = pendente_(vendas, nome);
       if (valor > pend + 0.001) throw new Error('O valor passa do pendente de ' + nome + ' (R$ ' + pend.toFixed(2).replace('.', ',') + ').');
       pixResp = pixCom_(PIX_CHAVE_RECEBEDOR, PIX_NOME_RECEBEDOR, valor, 'FP26P' + Date.now().toString(36).toUpperCase());
+    } else if (d.acao === 'vendas') {
+      autentica_(d.vendedor, d.pin); // dados das vendas só para vendedores com PIN
     } else if (d.acao === 'telefones') {
       autentica_(d.vendedor, d.pin); // cada vendedor vê só os telefones dos próprios compradores
       telResp = {};
@@ -268,7 +272,8 @@ function doPost(e) {
       throw new Error('Ação desconhecida.');
     }
     SpreadsheetApp.flush();
-    const resp = { ok: true, vendas: semTel_(lerVendas_()) };
+    const atual = lerVendas_();
+    const resp = { ok: true, vendas: semTel_(atual), mesas: atual.map(function (x) { return x.mesa; }) };
     if (pixResp) resp.pix = pixResp;
     if (telResp) resp.telefones = telResp;
     if (['prestacoes', 'receber', 'estornar'].indexOf(d.acao) >= 0) resp.prestacoes = lerPrest_();

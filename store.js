@@ -1,5 +1,5 @@
 // Camada de dados: planilha do Google Drive (via Google Apps Script) ou modo demonstração
-import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261109-1450";
+import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261109-1510";
 
 export async function criarStore() {
   return APPS_SCRIPT_URL ? planilhaStore() : demoStore();
@@ -7,22 +7,27 @@ export async function criarStore() {
 
 // ------------------------------------------------- Google Drive (planilha)
 function planilhaStore() {
-  let vendas = [], timer = null;
+  let vendas = [], timer = null, auth = null, seq = 0;
   const ouvPub = new Set(), ouvVen = new Set(), ouvErr = new Set();
 
   const normal = (l) => l.map((v) => ({ ...v, mesa: Number(v.mesa), valor: Number(v.valor),
     criadoEm: v.criadoEm ? new Date(v.criadoEm) : new Date() }));
-  function publicar(l) {
-    vendas = normal(l);
-    ouvPub.forEach((cb) => cb(vendas.map((v) => v.mesa).sort((a, b) => a - b)));
+  // Sem PIN, a planilha só informa quais mesas estão vendidas (nenhum dado de venda)
+  function publicar(l, mesas) {
+    vendas = normal(l || []);
+    const ms = (mesas || vendas.map((v) => v.mesa)).map(Number).sort((a, b) => a - b);
+    ouvPub.forEach((cb) => cb(ms));
     ouvVen.forEach((cb) => cb(vendas));
   }
   async function buscar() {
+    const meu = ++seq;
     try {
-      const r = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now(), { cache: "no-store" });
+      const r = auth
+        ? await fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify({ acao: "vendas", ...auth }), headers: { "Content-Type": "text/plain;charset=utf-8" } })
+        : await fetch(APPS_SCRIPT_URL + "?t=" + Date.now(), { cache: "no-store" });
       const d = await r.json();
       if (!d.ok) throw new Error(d.erro || "Erro na planilha");
-      publicar(d.vendas);
+      if (meu === seq) publicar(d.vendas, d.mesas);
     } catch (e) { ouvErr.forEach((cb) => cb(e)); }
   }
   async function enviar(corpo) {
@@ -31,7 +36,7 @@ function planilhaStore() {
       headers: { "Content-Type": "text/plain;charset=utf-8" } });
     const d = await r.json();
     if (!d.ok) throw new Error(d.erro || "Não foi possível salvar.");
-    publicar(d.vendas);
+    seq++; publicar(d.vendas, d.mesas);
     return d;
   }
   function iniciar() {
@@ -43,12 +48,17 @@ function planilhaStore() {
 
   return {
     modo: "planilha",
+    autenticar(s) {
+      const novo = s ? { vendedor: s.nome, pin: s.pin } : null;
+      if (JSON.stringify(novo) === JSON.stringify(auth)) return;
+      auth = novo; if (timer) buscar();
+    },
     onPublico(cb, onErr) { ouvPub.add(cb); onErr && ouvErr.add(onErr); iniciar(); },
     onVendas(cb, onErr) { ouvVen.add(cb); onErr && ouvErr.add(onErr); iniciar(); },
     entrar: (vendedor, pin) => enviar({ acao: "entrar", vendedor, pin }),
     vender: (venda, pin) => enviar({ acao: "vender", venda, pin }),
     cancelar: (mesa, pin) => enviar({ acao: "cancelar", mesa, pin }),
-    chegada: (mesas, chegou) => enviar({ acao: "chegada", mesas: [].concat(mesas), chegou }),
+    chegada: (mesas, chegou, s) => enviar({ acao: "chegada", mesas: [].concat(mesas), chegou, vendedor: s && s.nome, pin: s && s.pin }),
     // Prestação de contas (só o recebedor, com o PIN dele)
     prestacoes: async (pin) => (await enviar({ acao: "prestacoes", pin })).prestacoes || [],
     receber: async (r, pin) => (await enviar({ acao: "receber", ...r, pin })).prestacoes || [],
@@ -83,6 +93,7 @@ function demoStore() {
 
   return {
     modo: "demo",
+    autenticar() {},
     onPublico(cb) { ouvintesPub.add(cb); setTimeout(avisar); },
     onVendas(cb) { ouvintesVen.add(cb); setTimeout(avisar); },
     async vender(v) {

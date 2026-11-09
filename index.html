@@ -287,7 +287,7 @@ mark{background:var(--sun-soft);color:inherit;border-radius:3px}
 #comp-zap{flex-direction:column;gap:0;line-height:1.2}
 #comp-zap small{display:block;font-size:13px;opacity:.9;font-weight:700}
 .com-zap #comp-share{background:var(--paper);color:var(--green);border:1.5px solid var(--line);box-shadow:none}
-.com-zap #comp-wpp{display:none}
+
 .modal-acoes .btn-ghost{background:#fff;border-color:#fff}
 body.modal-aberto{overflow:hidden}
 /* comprovante-fim */
@@ -475,7 +475,7 @@ body.modal-aberto{overflow:hidden}
         <div class="legenda" data-legenda></div>
       </div>
     </div>
-    <div class="card">
+    <div class="card" id="card-recebido" hidden>
       <div class="card-head"><h2>Recebido por vendedor</h2></div>
       <div class="vendedores" id="vendedores"></div>
       <div class="totgeral"><span><b data-totgeral>R$ 0,00</b><br><small data-totsplit></small></span></div>
@@ -502,6 +502,21 @@ body.modal-aberto{overflow:hidden}
 
   <!-- =============== RECEPÇÃO / VENDAS REGISTRADAS =============== -->
   <section id="tela-recepcao" class="stack" hidden>
+    <div class="card" id="rc-login">
+      <div class="card-head"><h2>Recepção</h2></div>
+      <div class="sub">🔒 Área dos vendedores: os dados das vendas só aparecem para quem entra com o PIN.</div>
+      <div class="sessao">
+        <div class="sessao-tit">Toque no seu nome e digite seu PIN</div>
+        <div class="nomes" id="lista-vend-rc" role="radiogroup" aria-label="Vendedor(a)"></div>
+        <input type="hidden" id="sel-vend-rc">
+        <div class="sessao-campos">
+          <input id="pin-rc" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN">
+          <button type="button" class="btn btn-entrar" id="entrar-rc">Entrar</button>
+        </div>
+        <div class="erro" id="erro-rc" role="alert"></div>
+      </div>
+    </div>
+    <div id="rc-painel" class="stack" hidden>
     <div class="card">
       <div class="card-head"><h2>Vendas registradas</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
       <div class="sub">No dia da festa: pergunte o nome, busque e confirme a chegada.</div>
@@ -525,6 +540,7 @@ body.modal-aberto{overflow:hidden}
       </details>
       <div id="lista" class="lista" aria-live="polite"></div>
     </div>
+      </div>
   </section>
 
   <!-- =============== MINHAS VENDAS (cada vendedor) =============== -->
@@ -754,8 +770,6 @@ body.modal-aberto{overflow:hidden}
     <div class="modal-acoes">
       <button type="button" class="btn btn-primary" id="comp-zap" hidden>📲 Enviar ao WhatsApp do comprador</button>
       <button type="button" class="btn btn-primary" id="comp-share">📤 Compartilhar imagem</button>
-      <button type="button" class="btn btn-ghost" id="comp-wpp">WhatsApp</button>
-      <button type="button" class="btn btn-ghost" id="comp-copiar">Copiar texto</button>
       <button type="button" class="btn btn-ghost" id="comp-fechar">Fechar</button>
     </div>
   </div>
@@ -764,8 +778,8 @@ body.modal-aberto{overflow:hidden}
 
 <script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261109-1450";
-import { criarStore } from "./store.js?v=20261109-1450";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261109-1510";
+import { criarStore } from "./store.js?v=20261109-1510";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -823,6 +837,9 @@ let prestacoes = [], recebendo = null, timerContas = null, contasPronto = false;
 try { sessao = JSON.parse(localStorage.getItem("fp-sessao")) || null; } catch {}
 if (sessao && !VENDEDORES.includes(sessao.nome)) sessao = null;
 function mostrarSessao() {
+  try { store.autenticar(sessao); } catch {} // antes do store existir, ignora
+  $("#rc-login").hidden = !!sessao; $("#rc-painel").hidden = !sessao; $("#card-recebido").hidden = !sessao;
+  try { renderLegenda(); } catch {} // no início da página a legenda é montada logo adiante
   $("#sessao-on").hidden = !sessao; $("#sessao-off").hidden = !!sessao;
   $("#sessao-nome").textContent = sessao ? sessao.nome : "";
   $("#vendedor").value = sessao ? sessao.nome : "";
@@ -830,7 +847,7 @@ function mostrarSessao() {
   if (contasPronto) { renderContas(); carregarContas(); vigiarContas(); renderMinhasVendas(); carregarTelefones(); }
 }
 function sairSessao(msg) {
-  sessao = null; prestacoes = []; try { localStorage.removeItem("fp-sessao"); } catch {}
+  sessao = null; prestacoes = []; telefones = {}; vendas = []; try { localStorage.removeItem("fp-sessao"); } catch {}
   $("#pin").value = ""; escolherNome(""); mostrarSessao();
   if (msg) $("#erro-sessao").textContent = msg;
 }
@@ -881,8 +898,9 @@ function pintarMesas() {
     x.title = `Mesa ${x.dataset.m} — vendida${nome ? " por " + nomeCurto(nome) : ""}`;
   });
 }
-$$("[data-legenda]").forEach((l) => (l.innerHTML = `<span><i></i>Livre</span>` +
-  VENDEDORES.map((n) => `<span><i class="v" style="--cor:${corVend(n)}"></i>${esc(nomeCurto(n))}</span>`).join("")));
+function renderLegenda() { $$("[data-legenda]").forEach((l) => (l.innerHTML = !sessao ? `<span><i></i>Livre</span><span><i class="v" style="--cor:#8FA5AA"></i>Vendida</span>` : `<span><i></i>Livre</span>` +
+  VENDEDORES.map((n) => `<span><i class="v" style="--cor:${corVend(n)}"></i>${esc(nomeCurto(n))}</span>`).join(""))); }
+renderLegenda();
 
 function renderVendedores() {
   const tot = { Dinheiro: 0, PIX: 0 };
@@ -1043,7 +1061,6 @@ async function desenharComprovante(v) {
   f.drawImage(corpo, 0, 0);
   return fim;
 }
-const linkComprovante = (m) => `${location.origin}${location.pathname}?comprovante=${m.join("-")}`;
 async function abrirComprovante(v) {
   const m = v.mesas || [v.mesa];
   v = { ...v, telefone: v.telefone || m.map((x) => telefones[x]).find(Boolean) || "" };
@@ -1105,7 +1122,7 @@ function avisarVenda(v) {
 $("#venda-sim").addEventListener("click", () => { fecharAviso("#modal-venda"); abrirComprovante(vendaFeita); });
 $("#venda-nao").addEventListener("click", () => { fecharAviso("#modal-venda"); toast("Venda salva. O comprovante fica na aba Recepção."); });
 let jaViuAviso = false; try { jaViuAviso = sessionStorage.getItem("fp-aviso") === "1"; } catch {}
-if (!jaViuAviso && !new URLSearchParams(location.search).get("comprovante")) abrirAviso("#modal-aviso", "#aviso-ok");
+if (!jaViuAviso) abrirAviso("#modal-aviso", "#aviso-ok");
 function fecharComprovante() { $("#modal-comp").hidden = true; document.body.classList.remove("modal-aberto"); }
 $("#comp-fechar").addEventListener("click", fecharComprovante);
 $("#modal-comp").addEventListener("click", (e) => { if (e.target.id === "modal-comp") fecharComprovante(); });
@@ -1126,23 +1143,25 @@ $("#comp-share").addEventListener("click", async () => {
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nome; document.body.appendChild(a); a.click(); a.remove();
   toast("Imagem do comprovante salva.");
 });
-$("#comp-zap").addEventListener("click", () => {
+// Copia a IMAGEM do comprovante e abre a conversa do comprador; lá é só colar e enviar
+$("#comp-zap").addEventListener("click", async () => {
   if (!compAtual) return;
-  const d = soDigitos(compAtual.telefone), m = compAtual.mesas || [compAtual.mesa];
-  const msg = `Olá! Segue o comprovante da sua mesa. 🌸\n\n${comprovanteTxt(compAtual)}\n\n🧾 Ver o comprovante (imagem): ${linkComprovante(m)}`;
-  window.open(`https://wa.me/55${d}?text=${encodeURIComponent(msg)}`, "_blank", "noopener");
-});
-$("#comp-wpp").addEventListener("click", () => {
-  if (compAtual) window.open("https://wa.me/?text=" + encodeURIComponent(comprovanteTxt(compAtual)), "_blank", "noopener");
-});
-$("#comp-copiar").addEventListener("click", async () => {
-  if (!compAtual) return;
-  try { await navigator.clipboard.writeText(comprovanteTxt(compAtual)); toast("Texto copiado — é só colar no WhatsApp."); }
-  catch { toast("Não foi possível copiar o texto."); }
+  const d = soDigitos(compAtual.telefone);
+  const conversa = window.open("about:blank", "_blank");
+  let copiou = false;
+  try {
+    const blob = compBlob || await (await fetch($("#comp-img").src)).blob();
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); copiou = true;
+  } catch {}
+  const url = `https://wa.me/55${d}`;
+  if (conversa) conversa.location = url; else location.href = url;
+  toast(copiou ? "Imagem copiada! No WhatsApp, toque e segure no campo de mensagem → Colar → Enviar."
+    : "Abra a conversa e use “Compartilhar imagem” para enviar o comprovante.");
 });
 
 // ------------------------------------------------------------ dados
 const store = await criarStore();
+store.autenticar(sessao);
 $("#aviso-demo").hidden = store.modo !== "demo";
 const status = (ok) => $$("[data-status]").forEach((e) => { e.classList.toggle("off", !ok); e.lastChild.textContent = ok ? "Ao vivo" : "Sem conexão"; });
 
@@ -1310,6 +1329,28 @@ $("#contas-historico").addEventListener("click", async (e) => {
 });
 carregarContas(); vigiarContas();
 
+// ------------------------------------------------------------ login da Recepção
+$("#lista-vend-rc").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(v)}</button>`).join("");
+$("#lista-vend-rc").addEventListener("click", (e) => {
+  const b = e.target.closest(".nome-btn"); if (!b) return;
+  $("#sel-vend-rc").value = b.dataset.nome;
+  $$("#lista-vend-rc .nome-btn").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+  $("#erro-rc").textContent = ""; $("#pin-rc").focus();
+});
+$("#entrar-rc").addEventListener("click", async () => {
+  const nome = $("#sel-vend-rc").value, pin = $("#pin-rc").value.trim(), er = $("#erro-rc"), bt = $("#entrar-rc");
+  er.textContent = ""; if (!nome) { er.textContent = "Toque no seu nome."; return; }
+  if (!pin) { er.textContent = "Digite seu PIN."; $("#pin-rc").focus(); return; }
+  bt.disabled = true; bt.textContent = "Conferindo…";
+  try {
+    await store.entrar(nome, pin);
+    sessao = { nome, pin }; try { localStorage.setItem("fp-sessao", JSON.stringify(sessao)); } catch {}
+    $("#pin-rc").value = ""; mostrarSessao();
+  } catch (e) { er.textContent = e.message || "Não foi possível conferir o PIN."; }
+  finally { bt.disabled = false; bt.textContent = "Entrar"; }
+});
+$("#pin-rc").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#entrar-rc").click(); } });
+
 // ------------------------------------------------------------ minhas vendas (cada vendedor)
 $("#lista-vend-mv").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(v)}</button>`).join("");
 $("#lista-vend-mv").addEventListener("click", (e) => {
@@ -1384,15 +1425,8 @@ $("#mv-lista").addEventListener("click", async (e) => {
 });
 renderMinhasVendas();
 
-const compLink = (new URLSearchParams(location.search).get("comprovante") || "").split("-").map(Number).filter((n) => n >= 1 && n <= TOTAL_MESAS);
-let compLinkAberto = !compLink.length;
 carregarTelefones();
-store.onVendas((l) => { vendas = l; pintarMesas();
-  if (!compLinkAberto) {
-    compLinkAberto = true; const g = vendas.filter((x) => compLink.includes(x.mesa)).sort((a, b) => a.mesa - b.mesa);
-    if (g.length) abrirComprovante({ ...g[0], mesas: g.map((x) => x.mesa), total: g.reduce((s, x) => s + (+x.valor || 0), 0) });
-    else toast("Comprovante não encontrado.");
-  } renderMinhasVendas(); renderVendedores(); renderLista(); renderContas(); },
+store.onVendas((l) => { vendas = l; pintarMesas(); renderMinhasVendas(); renderVendedores(); renderLista(); renderContas(); },
   (e) => toast("Não foi possível carregar as vendas: " + e.message));
 
 // Lê "8, 9" / "8 9" / "8-10" e devolve a lista de números
@@ -1576,7 +1610,7 @@ $("#lista").addEventListener("click", async (e) => {
     const mesas = String((ok || un).dataset.chegada || (ok || un).dataset.desfazer).split(",").map(Number);
     (ok || un).disabled = true;
     const txt = mesas.length > 1 ? `mesas ${listaMesas(mesas)}` : `mesa ${mesas[0]}`;
-    try { await store.chegada(mesas, !!ok); toast(ok ? `Chegada confirmada — ${txt}. Boa festa! 🌸` : `Chegada da ${txt} desfeita.`); }
+    try { await store.chegada(mesas, !!ok, sessao); toast(ok ? `Chegada confirmada — ${txt}. Boa festa! 🌸` : `Chegada da ${txt} desfeita.`); }
     catch (err) { (ok || un).disabled = false; toast("Não foi possível salvar: " + err.message); }
     return;
   }
