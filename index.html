@@ -142,6 +142,7 @@ input[readonly]{background:#EDF5F7}
 fieldset{border:0;padding:0;margin:0;display:grid;gap:6px}
 legend{font-weight:800;font-size:14px;padding:0;margin-bottom:6px}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg label[hidden]{display:none!important}
 .seg{position:relative}.seg input{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;opacity:0;pointer-events:none}
 .seg label{display:inline-flex;align-items:center;justify-content:center;min-width:48px;min-height:44px;padding:0 14px;border:1.5px solid var(--line);border-radius:12px;background:#FFFFFF;cursor:pointer;font-weight:800;font-size:15px}
 .seg input:checked+label{background:var(--green);border-color:var(--green);color:#fff}
@@ -826,7 +827,22 @@ $("#lista-vend").addEventListener("click", (e) => {
   escolherNome(b.dataset.nome); $("#erro-sessao").textContent = ""; $("#pin").focus();
 });
 $("#grade-serie").innerHTML = SERIES.map((s, i) => `<input type="radio" name="serie" id="s${i}" value="${esc(s)}"><label for="s${i}">${esc(s)}</label>`).join("");
-$("#seg-turma").innerHTML = TURMAS.map((t, i) => `<input type="radio" name="turma" id="t${i}" value="${t}"><label for="t${i}">${t}</label>`).join("");
+// Turmas extras de algumas séries (ex.: 7º Ano também tem a turma D)
+const TURMAS_EXTRAS = { "7º Ano": ["D"] };
+const TODAS_TURMAS = [...TURMAS, ...new Set(Object.values(TURMAS_EXTRAS).flat())];
+$("#seg-turma").innerHTML = TODAS_TURMAS.map((t, i) => `<input type="radio" name="turma" id="t${i}" value="${t}"><label for="t${i}" data-turma="${t}">${t}</label>`).join("");
+function ajustarTurmas() {
+  const serie = (($("#form-venda [name=serie]:checked") || {}).value) || "";
+  const ok = new Set([...TURMAS, ...(TURMAS_EXTRAS[serie] || [])]);
+  TODAS_TURMAS.forEach((t, i) => {
+    const on = ok.has(t), inp = $("#t" + i);
+    inp.disabled = !on; $(`label[for="t${i}"]`).hidden = !on;
+    if (!on && inp.checked) inp.checked = false;
+  });
+  $("#seg-turma").style.gridTemplateColumns = `repeat(${ok.size},1fr)`;
+}
+$("#grade-serie").addEventListener("change", ajustarTurmas);
+ajustarTurmas();
 $("#seg-pag").innerHTML = PAGAMENTOS.map((p, i) => `<input type="radio" name="pagamento" id="p${i}" value="${p}"><label for="p${i}">${p === "PIX" ? "⚡ PIX" : "💵 Dinheiro"}</label>`).join("");
 $("#filtro-vend").innerHTML += VENDEDORES.map((v) => `<option>${esc(v)}</option>`).join("");
 $("#filtro-pag").innerHTML += PAGAMENTOS.map((p) => `<option>${p}</option>`).join("");
@@ -1575,6 +1591,7 @@ $("#form-venda").addEventListener("submit", async (e) => {
     ["comprador", "aluno"].forEach((n) => (e.target.elements[n].value = ""));
     e.target.elements.serie.value = "";
     $$("#form-venda input[type=radio]").forEach((r) => (r.checked = false));
+    ajustarTurmas();
     e.target.elements.mesa.value = ""; selecionadas = []; limpouSel = false; renderResumo();
     fecharAssistente();
     const feita = { ...v, total: v.valor * v.mesas.length, criadoEm: new Date().toISOString() };
