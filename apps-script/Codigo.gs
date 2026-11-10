@@ -128,7 +128,14 @@ function pixCom_(chave, nome, valor, txid) {
     emv_('59', nome25_(nome)) + emv_('60', PIX_CIDADE.slice(0, 15)) + emv_('62', emv_('05', txid)) + '6304';
   return { payload: s + crc16_(s), valor: Number(valor), recebedor: nome };
 }
-function pix_(valor, mesas) { return pixCom_(PIX_CHAVE, PIX_NOME, valor, 'FP26M' + mesas.join('M')); }
+// Vendedores com chave PIX própria: o QR das vendas deles cai na conta deles
+// (as chaves ficam só aqui no Apps Script, nunca no GitHub)
+const PIX_POR_VENDEDOR = { /* preenchido no Apps Script */ };
+function pix_(valor, mesas, vendedor) {
+  const k = PIX_POR_VENDEDOR[vendedor];
+  return k ? pixCom_(k, vendedor, valor, 'FP26M' + mesas.join('M'))
+           : pixCom_(PIX_CHAVE, PIX_NOME, valor, 'FP26M' + mesas.join('M'));
+}
 // Quanto um vendedor ainda tem para prestar de contas
 function pendente_(vendas, nome) {
   const vendido = vendas.filter(function (x) { return x.vendedor === nome; }).reduce(function (s, x) { return s + x.valor; }, 0);
@@ -194,7 +201,7 @@ function doPost(e) {
       sh.getRange(ini, 1, linhas.length, 9).setValues(linhas);
       if (sh.getRange(1, 12).getValue() === '') sh.getRange(1, 12).setValue('Telefone');
       sh.getRange(ini, 12, linhas.length, 1).setNumberFormat('@').setValues(linhas.map(function () { return [tel]; }));
-      if (v.pagamento === 'PIX' && PIX_CHAVE) pixResp = pix_(Number(v.valor) * mesas.length, mesas);
+      if (v.pagamento === 'PIX' && PIX_CHAVE) pixResp = pix_(Number(v.valor) * mesas.length, mesas, v.vendedor);
     } else if (d.acao === 'chegada') {
       autentica_(d.vendedor, d.pin); // só vendedores confirmam a chegada
       // Recepção no dia da festa: marca (ou desmarca) a chegada do comprador
@@ -225,7 +232,7 @@ function doPost(e) {
       autentica_(d.vendedor, d.pin);
       const ms = (d.mesas || []).map(Number);
       const g = vendaPix_(vendas, d.vendedor, ms);
-      pixResp = pix_(g.reduce(function (s, x) { return s + x.valor; }, 0), ms);
+      pixResp = pix_(g.reduce(function (s, x) { return s + x.valor; }, 0), ms, d.vendedor);
     } else if (d.acao === 'confirmarPix') {
       autentica_(d.vendedor, d.pin); // só quem vendeu confirma o recebimento
       const ms = (d.mesas || []).map(Number);
