@@ -188,9 +188,12 @@ function doPost(e) {
         : 'A mesa ' + ja[0] + ' acabou de ser vendida') + ' por outra pessoa.');
       if (!(Number(v.valor) > 0)) throw new Error('Informe o valor.');
       if (PAGAMENTOS.indexOf(v.pagamento) < 0) throw new Error('Forma de pagamento inválida.');
-      if (TURMAS.indexOf(v.turma) < 0) throw new Error('Turma inválida.');
-      if (!String(v.comprador || '').trim() || !String(v.aluno || '').trim())
-        throw new Error('Preencha comprador e aluno.');
+      // Professor(a) ou funcionário(a) compra sem aluno vinculado
+      const prof = v.tipo === 'professor';
+      if (prof) { v.aluno = ''; v.serie = 'Professor(a)'; v.turma = ''; }
+      else if (TURMAS.indexOf(v.turma) < 0) throw new Error('Turma inválida.');
+      if (!String(v.comprador || '').trim() || (!prof && !String(v.aluno || '').trim()))
+        throw new Error(prof ? 'Preencha o nome do comprador.' : 'Preencha comprador e aluno.');
       const tel = v.telefone ? telefone_(v.telefone) : ''; // telefone é opcional
       const agora = new Date();
       const linhas = mesas.map(function (m) {

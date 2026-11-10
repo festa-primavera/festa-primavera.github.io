@@ -333,6 +333,7 @@ body.modal-aberto{overflow:hidden}
 .grade-serie label,.seg-turma label{min-height:50px;font-size:15px;padding:0 6px}
 .seg-turma{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .seg-pag{display:grid;gap:10px}
+.seg-tipo label{font-size:16px!important;line-height:1.25;padding:10px 16px!important}
 .seg-pag label{min-height:64px;font-size:19px;justify-content:flex-start;padding:0 18px}
 .revisao{margin:0;display:grid;border:1.5px solid var(--line);border-radius:14px;overflow:hidden}
 .revisao div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px 14px;border-bottom:1px solid var(--line)}
@@ -679,9 +680,18 @@ body.modal-aberto{overflow:hidden}
         </div>
       </section>
 
+      <section class="passo" data-passo="tipo">
+        <h3 class="pergunta">Quem está comprando a mesa?</h3>
+        <div class="seg seg-pag seg-tipo" id="seg-tipo">
+          <input type="radio" name="tipo" id="tp0" value="responsavel"><label for="tp0">👨‍👩‍👧 Pai, mãe ou responsável por aluno</label>
+          <input type="radio" name="tipo" id="tp1" value="professor"><label for="tp1">🍎 Professor(a) ou funcionário(a) da escola</label>
+        </div>
+        <div class="erro" data-erro-passo role="alert"></div>
+      </section>
+
       <section class="passo" data-passo="comprador">
-        <h3 class="pergunta"><label for="in-comprador">Qual é o nome do comprador?</label></h3>
-        <p class="passo-dica">Quem está pagando pela mesa (pai, mãe ou responsável).</p>
+        <h3 class="pergunta"><label for="in-comprador" id="tit-comprador">Qual é o nome do comprador?</label></h3>
+        <p class="passo-dica" id="dica-comprador">Quem está pagando pela mesa (pai, mãe ou responsável).</p>
         <input id="in-comprador" name="comprador" autocomplete="off" maxlength="100" placeholder="Nome completo" enterkeyhint="next">
         <div class="erro" data-erro-passo role="alert"></div>
         <button type="button" class="btn btn-primary btn-prox" data-prox>Próximo →</button>
@@ -765,8 +775,8 @@ body.modal-aberto{overflow:hidden}
 
 <script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261109-1535";
-import { criarStore } from "./store.js?v=20261109-1535";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261110-1600";
+import { criarStore } from "./store.js?v=20261110-1600";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -776,6 +786,8 @@ const CORES = ["#D81F5A", "#0E9F84", "#E59400", "#0798D7", "#7B4FD0"];
 const iniciais = (n) => n.split(" ").filter((p) => p.length > 2).slice(0, 1).concat(n.split(" ").slice(-1)).map((p) => p[0]).join("");
 const primeiroNome = (n) => n.split(" ")[0][0] + n.split(" ")[0].slice(1).toLowerCase();
 // Na tela aparece só o primeiro nome do vendedor (o nome completo continua sendo a identificação)
+const ehProf = (v) => v && v.serie === "Professor(a)";
+const quemAluno = (v) => ehProf(v) ? "Professor(a) / funcionário(a) da escola" : `Aluno: ${v.aluno} · ${v.serie} ${v.turma}`;
 const nomeCurto = (n) => (n ? ({ "MARCIA": "Márcia" }[n.split(" ")[0]] || primeiroNome(n)) : "");
 
 let vendidas = [], vendas = [], selecionadas = [], anteriores = new Set(), primeiraCarga = true;
@@ -939,7 +951,7 @@ function renderLista() {
     <div class="vm">Mesa<b>${v.mesa}</b></div>
     <div class="vi">
       <b>${marca(v.comprador)}</b>
-      <span>Aluno: ${marca(v.aluno)} · ${esc(v.serie)} ${esc(v.turma)}</span>
+      <span>${ehProf(v) ? "🍎 Professor(a) / funcionário(a)" : `Aluno: ${marca(v.aluno)} · ${esc(v.serie)} ${esc(v.turma)}`}</span>
       <span>${esc(v.pagamento)} · ${brl(v.valor)} · vendida por ${esc(nomeCurto(v.vendedor))}${v.pagamento === "PIX" ? (valida(v.pixOk) ? ' · <b class="pix-ok">PIX confirmado</b>' : ' · <b class="pix-pend">PIX a confirmar</b>') : ""}</span>
       ${valida(v.criadoEm) ? `<span>🕒 Vendida em ${quando(v.criadoEm)}</span>` : ""}
       ${grupoDe(v).length > 1 ? `<span class="grupo">Comprou ${grupoDe(v).length} mesas: ${listaMesas(grupoDe(v).map((x) => x.mesa))}</span>` : ""}
@@ -970,7 +982,7 @@ E.M. Dep. Federal Ulisses Guimarães — 12/11/2026
 
 ✅ ${m.length > 1 ? `Mesas nº *${listaMesas(m)}* garantidas!` : `Mesa nº *${m[0]}* garantida!`}
 Comprador: ${v.comprador}
-Aluno: ${v.aluno} (${v.serie} ${v.turma})
+${ehProf(v) ? "Professor(a) / funcionário(a) da escola" : `Aluno: ${v.aluno} (${v.serie} ${v.turma})`}
 Pagamento: ${v.pagamento} — ${brl(v.total ?? v.valor)}
 Vendedor(a): ${nomeCurto(v.vendedor)}${valida(v.criadoEm) ? `
 Data da compra: ${new Date(v.criadoEm).toLocaleDateString("pt-BR", { timeZone: "America/Manaus" })} às ${new Date(v.criadoEm).toLocaleTimeString("pt-BR", { timeZone: "America/Manaus", hour: "2-digit", minute: "2-digit" })}` : ""}
@@ -1025,7 +1037,7 @@ async function desenharComprovante(v) {
     quebrarTexto(x, val, W - 2 * P - 60).forEach((l) => { x.fillText(l, P + 30, y); y += 50; }); y += 26;
   };
   linha("Comprador", v.comprador);
-  linha("Aluno", `${v.aluno} · ${v.serie} ${v.turma}`);
+  if (ehProf(v)) linha("Comprador é", "Professor(a) da escola"); else linha("Aluno", `${v.aluno} · ${v.serie} ${v.turma}`);
   linha("Pagamento", `${v.pagamento} — ${brl(v.total ?? v.valor)}`, "#0E9F84");
   linha("Vendedor(a)", nomeCurto(v.vendedor));
   if (valida(v.criadoEm)) linha("Data da compra", new Date(v.criadoEm).toLocaleDateString("pt-BR", TZ) + " às " + hora(v.criadoEm));
@@ -1146,7 +1158,7 @@ $("#entrar-vend").addEventListener("click", async () => {
     await store.entrar(nome, pin);
     sessao = { nome, pin }; try { localStorage.setItem("fp-sessao", JSON.stringify(sessao)); } catch {}
     $("#pin").value = ""; mostrarSessao(); toast(`Olá, ${nomeCurto(nome)}! Vendas serão registradas no seu nome.`);
-    if (!$("#assistente").hidden) { if (editando) { editando = false; irPasso("revisao"); } else irPasso("comprador"); }
+    if (!$("#assistente").hidden) { if (editando) { editando = false; irPasso("revisao"); } else irPasso("tipo"); }
   } catch (e) { er.textContent = e.message || "Não foi possível conferir o PIN."; }
   finally { bt.disabled = false; bt.textContent = "Entrar"; }
 });
@@ -1366,7 +1378,7 @@ function renderMinhasVendas() {
       <div class="vm">${ms.length > 1 ? "Mesas" : "Mesa"}<b style="text-transform:none${ms.length > 1 ? ";font-size:" + (ms.length > 2 ? 18 : 24) + "px" : ""}">${listaMesas(ms)}</b></div>
       <div class="vi">
         <b>${esc(v.comprador)}</b>
-        <span>Aluno: ${esc(v.aluno)} · ${esc(v.serie)} ${esc(v.turma)}</span>
+        <span>${esc(quemAluno(v))}</span>
         <span>${esc(v.pagamento)} · ${brl(tot)}</span>
         ${valida(v.criadoEm) ? `<span>🕒 Vendida em ${quando(v.criadoEm)}</span>` : ""}
         ${v.pagamento === "PIX" ? (g.every((x) => valida(x.pixOk)) ? `<span class="pix-ok">⚡ PIX confirmado em ${quando(g[0].pixOk)}</span>` : `<span class="pix-pend">⏳ PIX aguardando confirmação</span>`) : ""}
@@ -1430,9 +1442,11 @@ function marcarMesa() {
 // Depois de escolher a mesa: se o vendedor ainda não se identificou, vai para a identificação;
 // se já se identificou, vai direto para o nome do comprador.
 // ------------------------------------------------------------ assistente de venda (um dado por vez)
-const PASSOS = ["vendedor", "comprador", "aluno", "serie", "pagamento", "revisao"];
+const PASSOS = ["vendedor", "tipo", "comprador", "aluno", "serie", "pagamento", "revisao"];
 let passoAtual = "comprador", passosVenda = PASSOS, editando = false;
-const passosVisiveis = () => passosVenda;
+const ehProfVenda = () => valorDe("tipo") === "professor";
+// Professor(a)/funcionário(a) não tem aluno: pula os passos do aluno e da série
+const passosVisiveis = () => passosVenda.filter((p) => !(ehProfVenda() && (p === "aluno" || p === "serie")));
 function infoAssistente() {
   const n = selecionadas.length;
   $("#ass-mesas").textContent = n > 1 ? `Mesas ${listaMesas(selecionadas)}` : `Mesa ${selecionadas[0] ?? ""}`;
@@ -1446,6 +1460,10 @@ function irPasso(p, volta) {
   $("#ass-barra").style.width = ((i + 1) / vis.length) * 100 + "%";
   infoAssistente();
   if (p === "revisao") montarRevisao();
+  if (p === "comprador") {
+    $("#tit-comprador").textContent = ehProfVenda() ? "Qual é o nome do(a) professor(a) ou funcionário(a)?" : "Qual é o nome do comprador?";
+    $("#dica-comprador").textContent = ehProfVenda() ? "Quem está comprando a mesa." : "Quem está pagando pela mesa (pai, mãe ou responsável).";
+  }
   const foco = { vendedor: sessao ? null : ($("#sel-vendedor").value ? "#pin" : "#lista-vend .nome-btn"), comprador: "#in-comprador", aluno: "#in-aluno" }[p];
   $("#form-venda").scrollTop = 0;
   if (foco) setTimeout(() => $(foco) && $(foco).focus({ preventScroll: true }), 320);
@@ -1455,12 +1473,13 @@ function abrirAssistente() {
   $("#erro-venda").textContent = "";
   passosVenda = PASSOS.filter((p) => p !== "vendedor" || !sessao); editando = false;
   $("#assistente").hidden = false; document.body.classList.add("modal-aberto");
-  irPasso(sessao ? "comprador" : "vendedor");
+  irPasso(sessao ? "tipo" : "vendedor");
 }
 function fecharAssistente() { $("#assistente").hidden = true; if ($("#modal-comp").hidden && $("#modal-venda").hidden) document.body.classList.remove("modal-aberto"); }
 const valorDe = (n) => (($(`#form-venda [name=${n}]:checked`) || {}).value) || "";
 function validaPasso(p) {
   const f = $("#form-venda").elements;
+  if (p === "tipo" && !valorDe("tipo")) return "Toque em quem está comprando.";
   if (p === "comprador" && !f.comprador.value.trim()) return "Digite o nome do comprador.";
   if (p === "aluno" && !f.aluno.value.trim()) return "Digite o nome do aluno.";
   if (p === "serie" && !valorDe("serie")) return "Toque na série do aluno.";
@@ -1483,8 +1502,9 @@ function montarRevisao() {
   const linhas = [
     ["Mesa" + (n > 1 ? "s" : ""), n > 1 ? listaMesas(selecionadas) : selecionadas[0], null],
     ["Comprador", f.comprador.value.trim().toUpperCase(), "comprador"],
-    ["Aluno", f.aluno.value.trim().toUpperCase(), "aluno"],
-    ["Série e turma", `${valorDe("serie")} ${valorDe("turma")}`, "serie"],
+    ...(ehProfVenda() ? [["Comprador é", "Professor(a) / funcionário(a)", "tipo"]] : [
+      ["Aluno", f.aluno.value.trim().toUpperCase(), "aluno"],
+      ["Série e turma", `${valorDe("serie")} ${valorDe("turma")}`, "serie"]]),
     ["Pagamento", valorDe("pagamento"), "pagamento"],
     ["Vendedor(a)", sessao ? nomeCurto(sessao.nome) : "", "trocar"],
   ];
@@ -1503,6 +1523,15 @@ $("#form-venda").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && e.target.matches("#in-comprador, #in-aluno")) { e.preventDefault(); avancar(); }
 });
 // pagamento: um toque já leva para a conferência
+$("#seg-tipo").addEventListener("click", (e) => {
+  if (!e.target.closest("label")) return;
+  setTimeout(() => {
+    if (passoAtual !== "tipo") return;
+    // trocou para responsável vindo da conferência: precisa preencher aluno e série
+    if (editando && !ehProfVenda() && (!$("#in-aluno").value.trim() || !valorDe("serie"))) editando = false;
+    avancar();
+  }, 220);
+});
 $("#seg-pag").addEventListener("click", (e) => { if (e.target.closest("label")) setTimeout(() => passoAtual === "pagamento" && avancar(), 220); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#assistente").hidden && $("#modal-comp").hidden) fecharAssistente(); });
 $("#mapa-vendas").addEventListener("click", (e) => {
@@ -1526,12 +1555,13 @@ $("#form-venda").addEventListener("submit", async (e) => {
     mesas: [...selecionadas], valor: VALOR_MESA > 0 ? VALOR_MESA : Number(f.get("valor")),
     vendedor: f.get("vendedor"), comprador: (f.get("comprador") || "").trim().toUpperCase(),
     aluno: (f.get("aluno") || "").trim().toUpperCase(), serie: f.get("serie"),
-    turma: f.get("turma"), pagamento: f.get("pagamento"),
+    turma: f.get("turma"), pagamento: f.get("pagamento"), tipo: f.get("tipo") || "responsavel",
   };
+  if (v.tipo === "professor") { v.aluno = ""; v.serie = "Professor(a)"; v.turma = ""; }
   const faltando = [
     [!v.mesas.length, "a mesa"], [!(v.valor > 0), "o valor"],
-    [!v.comprador, "o nome do comprador"], [!v.aluno, "o nome do aluno"], [!v.serie, "a série"],
-    [!v.turma, "a turma"], [!v.pagamento, "a forma de pagamento"],
+    [!v.comprador, "o nome do comprador"], [v.tipo !== "professor" && !v.aluno, "o nome do aluno"], [!v.serie, "a série"],
+    [v.tipo !== "professor" && !v.turma, "a turma"], [!v.pagamento, "a forma de pagamento"],
   ].filter(([x]) => x).map(([, t]) => t);
   if (!v.mesas.length) { fecharAssistente(); $("#mapa-vendas").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
   if (!sessao) { passosVenda = PASSOS; irPasso("vendedor", true); return; }
