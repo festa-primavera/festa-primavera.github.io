@@ -975,7 +975,7 @@ function renderLista() {
     <div class="vbtns">${v.chegada
         ? `<span class="ok-chegou">✓ Chegou às ${hora(v.chegada)}</span>`
         : ((p) => `<button class="btn btn-chegada" data-chegada="${p.join(",")}">Confirmar chegada${p.length > 1 ? ` (${p.length} mesas)` : ""}</button>`)(grupoDe(v).filter((x) => !x.chegada).map((x) => x.mesa))}</div>
-    <div class="vlinks">${v.chegada ? `<button class="lnk" data-desfazer="${v.mesa}">Desfazer chegada</button>` : ""}<button class="lnk" data-copiar="${v.mesa}">Comprovante</button><button class="lnk del" data-cancelar="${v.mesa}">Cancelar venda</button></div>
+    <div class="vlinks">${v.chegada ? `<button class="lnk" data-desfazer="${v.mesa}">Desfazer chegada</button>` : ""}<button class="lnk" data-copiar="${v.mesa}">Comprovante</button><button class="lnk" data-imprimir="${v.mesa}">🖨️ Imprimir</button><button class="lnk del" data-cancelar="${v.mesa}">Cancelar venda</button></div>
   </article>`).join("") : `<div class="vazio">${vendas.length ? "Nenhuma venda encontrada. Confira a grafia ou busque pelo nome do aluno." : "Nenhuma venda ainda. A primeira mesa está esperando! 🌱"}</div>`;
 }
 ["#busca", "#filtro-vend", "#filtro-pag"].forEach((s) => $(s).addEventListener("input", renderLista));
@@ -983,9 +983,15 @@ $("#seg-status").addEventListener("change", renderLista);
 
 // ------------------------------------------------------------ util
 let toastT;
+function toastAcao(msg, rotulo, fn) {
+  $("#toast-txt").textContent = msg;
+  const b = $("#toast-btn"); b.hidden = false; b.textContent = rotulo; b.onclick = () => { $("#toast").classList.remove("on"); fn(); };
+  $("#toast").classList.add("on"); clearTimeout(toastT);
+  toastT = setTimeout(() => $("#toast").classList.remove("on"), 8000);
+}
 function toast(msg, comprovante) {
   $("#toast-txt").textContent = msg;
-  const b = $("#toast-btn"); b.hidden = !comprovante; b.onclick = () => { $("#toast").classList.remove("on"); abrirComprovante(comprovante); };
+  const b = $("#toast-btn"); b.hidden = !comprovante; b.textContent = "Ver comprovante"; b.onclick = () => { $("#toast").classList.remove("on"); abrirComprovante(comprovante); };
   $("#toast").classList.add("on"); clearTimeout(toastT);
   toastT = setTimeout(() => $("#toast").classList.remove("on"), comprovante ? 7000 : 3500);
 }
@@ -1161,15 +1167,28 @@ function prepararPdf(v) {
 async function enviarPdf() {
   if (!pdfPronto) return;
   if (!pdfPronto.blob) { const c = await desenharComprovante(vendaFeita); pdfPronto.blob = pdfDeCanvas(c); }
-  const arq = new File([pdfPronto.blob], pdfPronto.nome, { type: "application/pdf" });
+  return compartilharPdf(pdfPronto.blob, pdfPronto.nome);
+}
+// Botão "Imprimir" das listas: gera o PDF da venda e abre o envio (WhatsApp)
+async function imprimirVenda(v) {
+  const m = v.mesas || [v.mesa];
+  const blob = pdfDeCanvas(await desenharComprovante(v));
+  return compartilharPdf(blob, `comprovante-mesa-${m.join("-")}.pdf`);
+}
+async function compartilharPdf(blob, nome) {
+  const arq = new File([blob], nome, { type: "application/pdf" });
   try {
     if (navigator.canShare && navigator.canShare({ files: [arq] })) {
       await navigator.share({ files: [arq], title: "Comprovante da mesa — Festa da Primavera" });
       toast("Comprovante enviado. 💚"); return;
     }
-  } catch (e) { if (e && e.name === "AbortError") return; }
+  } catch (e) {
+    if (e && e.name === "AbortError") return;
+    // alguns celulares exigem um toque logo antes de compartilhar: oferece o botão de novo
+    if (e && e.name === "NotAllowedError") { toastAcao("PDF pronto.", "📤 Enviar PDF", () => compartilharPdf(blob, nome)); return; }
+  }
   // computador ou celular sem compartilhamento: baixa o PDF
-  const a = document.createElement("a"); a.href = URL.createObjectURL(arq); a.download = pdfPronto.nome;
+  const a = document.createElement("a"); a.href = URL.createObjectURL(arq); a.download = nome;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   toast("PDF do comprovante baixado. Envie pelo WhatsApp.");
 }
@@ -1444,7 +1463,7 @@ function renderMinhasVendas() {
         ${v.pagamento === "PIX" ? (g.every((x) => valida(x.pixOk)) ? `<span class="pix-ok">⚡ PIX confirmado em ${quando(g[0].pixOk)}</span>` : `<span class="pix-pend">⏳ PIX aguardando confirmação</span>`) : ""}
         ${cheg ? `<span class="grupo" style="color:var(--green-2)">✓ Chegou à festa${g.length > 1 && cheg < g.length ? ` (${cheg} de ${g.length})` : ""}</span>` : ""}
       </div>
-      <div class="vlinks"><button class="lnk" data-mv-comp="${ms.join(",")}">Comprovante</button>${v.pagamento === "PIX" && !g.every((x) => valida(x.pixOk)) ? `<button class="lnk" data-mv-pix="${ms.join(",")}">⚡ Ver QR Code / confirmar PIX</button>` : ""}</div>
+      <div class="vlinks"><button class="lnk" data-mv-comp="${ms.join(",")}">Comprovante</button><button class="lnk" data-mv-imp="${ms.join(",")}">🖨️ Imprimir</button><button class="lnk del" data-mv-cancel="${ms.join(",")}">Cancelar venda</button>${v.pagamento === "PIX" && !g.every((x) => valida(x.pixOk)) ? `<button class="lnk" data-mv-pix="${ms.join(",")}">⚡ Ver QR Code / confirmar PIX</button>` : ""}</div>
     </article>`;
   }).join("") : `<div class="vazio">${minhas.length ? "Nenhuma venda encontrada." : "Você ainda não vendeu nenhuma mesa. 🌱"}</div>`;
 }
@@ -1456,6 +1475,31 @@ $("#mv-lista").addEventListener("click", async (e) => {
     try { const r = await store.pix(sessao.nome, sessao.pin, ms); abrirPix({ ...g[0], mesas: ms }, r.pix, null); }
     catch (err) { toast("Erro: " + err.message); }
     finally { px.disabled = false; px.textContent = "⚡ Ver QR Code / confirmar PIX"; }
+    return;
+  }
+  const imp = e.target.closest("[data-mv-imp]");
+  if (imp) {
+    const ms = imp.dataset.mvImp.split(",").map(Number), g = vendas.filter((x) => ms.includes(x.mesa)).sort((a, b) => a.mesa - b.mesa);
+    if (!g.length) return;
+    imp.disabled = true;
+    try { await imprimirVenda({ ...g[0], mesas: ms, total: g.reduce((s, x) => s + (+x.valor || 0), 0) }); }
+    finally { imp.disabled = false; }
+    return;
+  }
+  const cx = e.target.closest("[data-mv-cancel]");
+  if (cx) {
+    const ms = cx.dataset.mvCancel.split(",").map(Number), rot = ms.length > 1 ? `Cancelar venda (${ms.length} mesas)` : "Cancelar venda";
+    if (!cx.classList.contains("confirma")) {
+      $$("#mv-lista .lnk.confirma").forEach((x) => { x.classList.remove("confirma"); x.textContent = "Cancelar venda"; });
+      cx.classList.add("confirma"); cx.textContent = ms.length > 1 ? `Confirmar? Cancela as mesas ${listaMesas(ms)}` : "Confirmar cancelamento?";
+      setTimeout(() => { if (cx.isConnected) { cx.classList.remove("confirma"); cx.textContent = "Cancelar venda"; } }, 5000);
+      return;
+    }
+    cx.disabled = true; cx.textContent = "Cancelando…";
+    try {
+      for (const m of ms) await store.cancelar(m, sessao.pin);
+      toast(ms.length > 1 ? `Venda das mesas ${listaMesas(ms)} cancelada.` : `Venda da mesa ${ms[0]} cancelada.`);
+    } catch (err) { cx.disabled = false; cx.textContent = rot; toast("Erro ao cancelar: " + err.message); }
     return;
   }
   const b = e.target.closest("[data-mv-comp]"); if (!b) return;
@@ -1657,6 +1701,14 @@ $("#lista").addEventListener("click", async (e) => {
     const txt = mesas.length > 1 ? `mesas ${listaMesas(mesas)}` : `mesa ${mesas[0]}`;
     try { await store.chegada(mesas, !!ok, sessao); toast(ok ? `Chegada confirmada — ${txt}. Boa festa! 🌸` : `Chegada da ${txt} desfeita.`); }
     catch (err) { (ok || un).disabled = false; toast("Não foi possível salvar: " + err.message); }
+    return;
+  }
+  const imp = e.target.closest("[data-imprimir]");
+  if (imp) {
+    const v = vendas.find((x) => x.mesa === Number(imp.dataset.imprimir)); const g = grupoDe(v);
+    imp.disabled = true;
+    try { await imprimirVenda({ ...v, mesas: g.map((x) => x.mesa), total: g.reduce((s, x) => s + (+x.valor || 0), 0) }); }
+    finally { imp.disabled = false; }
     return;
   }
   if (c) {
