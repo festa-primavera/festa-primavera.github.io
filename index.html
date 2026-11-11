@@ -1045,7 +1045,7 @@ async function desenharComprovante(v) {
   const corpo = document.createElement("canvas"); corpo.width = W; corpo.height = 2400;
   const xc = x; x = corpo.getContext("2d");
   // número da mesa
-  const rotMesa = m.length > 1 ? "MESAS" : "MESA", numMesa = listaMesas(m);
+  const rotMesa = "COMPROVANTE Nº", numMesa = listaMesas(m);
   x.fillStyle = "#FDE4EC"; x.beginPath(); x.roundRect(P + 20, 450, W - 2 * P - 40, 250, 28); x.fill();
   x.textAlign = "center"; x.fillStyle = "#D81F5A"; x.font = `800 34px ${SANS}`; x.fillText(rotMesa, W / 2, 510);
   let tam = 170; x.font = `800 ${tam}px ${SERIF}`;
