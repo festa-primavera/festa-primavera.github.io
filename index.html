@@ -758,8 +758,8 @@ body.modal-aberto{overflow:hidden}
     <h2 id="venda-tit">Venda registrada!</h2>
     <div class="aviso-sub" id="venda-sub"></div>
     <p class="aviso-destaque">📌 <b>Lembre o comprador:</b> o número da mesa é só para controle. No dia da festa, as mesas serão ocupadas <b>por ordem de chegada</b>.</p>
-    <p class="aviso-pergunta">Deseja mostrar o comprovante na tela para o comprador tirar uma foto?</p>
-    <div class="aviso-acoes"><button type="button" class="btn btn-ghost" id="venda-nao">Agora não</button><button type="button" class="btn btn-primary" id="venda-sim">📷 Sim, mostrar</button></div>
+    <p class="aviso-pergunta">Imprimir o comprovante em PDF e enviar pelo WhatsApp?</p>
+    <div class="aviso-acoes"><button type="button" class="btn btn-ghost" id="venda-nao">Agora não</button><button type="button" class="btn btn-primary" id="venda-sim">🖨️ Imprimir</button></div>
   </div>
 </div>
 <div class="modal" id="modal-comp" hidden role="dialog" aria-modal="true" aria-label="Comprovante da mesa">
@@ -1124,12 +1124,56 @@ function fecharAviso(id) { $(id).hidden = true; if ($("#modal-comp").hidden) doc
 $("#aviso-ok").addEventListener("click", () => { fecharAviso("#modal-aviso"); try { sessionStorage.setItem("fp-aviso", "1"); } catch {} });
 let vendaFeita = null;
 function avisarVenda(v) {
-  vendaFeita = v; const m = v.mesas || [v.mesa];
+  vendaFeita = v; const m = v.mesas || [v.mesa]; prepararPdf(v);
   $("#venda-tit").textContent = m.length > 1 ? `Mesas ${listaMesas(m)} vendidas!` : `Mesa ${m[0]} vendida!`;
   $("#venda-sub").textContent = `${v.comprador} · ${brl(v.total ?? v.valor)} · ${v.pagamento}`;
   abrirAviso("#modal-venda", "#venda-sim");
 }
-$("#venda-sim").addEventListener("click", () => { fecharAviso("#modal-venda"); abrirComprovante(vendaFeita); });
+// ------------------------------------------------------------ comprovante em PDF (para enviar pelo WhatsApp)
+function pdfDeCanvas(c) {
+  const jpg = atob(c.toDataURL("image/jpeg", 0.92).split(",")[1]);
+  const W = 298, H = Math.round(298 * c.height / c.width); // largura de um A6
+  const partes = [], offs = [];
+  let tam = 0;
+  const add = (s) => { partes.push(s); tam += s.length; };
+  const obj = (n, s) => { offs[n] = tam; add(`${n} 0 obj\n${s}\nendobj\n`); };
+  add("%PDF-1.4\n");
+  obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+  obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>`);
+  const cont = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+  obj(4, `<< /Length ${cont.length} >>\nstream\n${cont}\nendstream`);
+  obj(5, `<< /Type /XObject /Subtype /Image /Width ${c.width} /Height ${c.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n${jpg}\nendstream`);
+  const xref = tam;
+  add(`xref\n0 6\n0000000000 65535 f \n${[1, 2, 3, 4, 5].map((n) => String(offs[n]).padStart(10, "0") + " 00000 n \n").join("")}`);
+  add(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  const s = partes.join(""), b = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i) & 255;
+  return new Blob([b], { type: "application/pdf" });
+}
+let pdfPronto = null; // gerado assim que a venda é concluída, para o toque em "Imprimir" já abrir o envio
+function prepararPdf(v) {
+  const m = v.mesas || [v.mesa];
+  pdfPronto = { nome: `comprovante-mesa-${m.join("-")}.pdf`, blob: null };
+  const alvo = pdfPronto;
+  desenharComprovante(v).then((c) => { alvo.blob = pdfDeCanvas(c); }).catch(() => {});
+}
+async function enviarPdf() {
+  if (!pdfPronto) return;
+  if (!pdfPronto.blob) { const c = await desenharComprovante(vendaFeita); pdfPronto.blob = pdfDeCanvas(c); }
+  const arq = new File([pdfPronto.blob], pdfPronto.nome, { type: "application/pdf" });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [arq] })) {
+      await navigator.share({ files: [arq], title: "Comprovante da mesa — Festa da Primavera" });
+      toast("Comprovante enviado. 💚"); return;
+    }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  // computador ou celular sem compartilhamento: baixa o PDF
+  const a = document.createElement("a"); a.href = URL.createObjectURL(arq); a.download = pdfPronto.nome;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast("PDF do comprovante baixado. Envie pelo WhatsApp.");
+}
+$("#venda-sim").addEventListener("click", () => { fecharAviso("#modal-venda"); enviarPdf(); });
 $("#venda-nao").addEventListener("click", () => { fecharAviso("#modal-venda"); toast("Venda salva. O comprovante fica na aba Recepção."); });
 let jaViuAviso = false; try { jaViuAviso = sessionStorage.getItem("fp-aviso") === "1"; } catch {}
 if (!jaViuAviso) abrirAviso("#modal-aviso", "#aviso-ok");
