@@ -37,6 +37,7 @@ dt{font-weight:800;font-size:12px;letter-spacing:.05em;color:var(--muted);text-t
 dd{margin:2px 0 0;font-weight:800;font-size:19px}
 .regras{margin-top:20px;padding-top:16px;border-top:3px dashed var(--line);display:grid;gap:10px;font-size:15px}
 .regras p{margin:0;display:flex;gap:10px}
+.enviar{margin-top:20px;width:100%;min-height:54px;border:0;border-radius:16px;background:var(--green);color:#fff;font:800 17px "Nunito Sans",system-ui,sans-serif;cursor:pointer}
 .carregando{color:var(--muted);text-align:center;padding:30px 0}
 </style>
 </head>
@@ -86,9 +87,16 @@ else {
         </dl>
         <div class="regras">
           <p>🔒 <span>A área das mesas é fechada: só entra quem comprou a mesa.</span></p>
-          <p>🎟️ <span>Este comprovante é o seu passe para sair e voltar à área das mesas (água, comida e outros itens são vendidos fora dela). Mostre-o na entrada.</span></p>
+          <p>🎟️ <span>Este comprovante digital é o passe de todos da mesa para sair e voltar à área das mesas (água, comida e outros itens são vendidos fora dela). Mostre esta tela na entrada.</span></p>
+          <p>📱 <span>Para não perder: salve esta página nos favoritos ou tire um print da tela. Envie o link para as outras pessoas da sua mesa.</span></p>
           <p>📌 <span>O número é só para controle das vendas. As mesas são ocupadas por ordem de chegada.</span></p>
-        </div>`;
+        </div>
+        <button type="button" class="enviar" id="enviar">📤 Enviar para quem está na minha mesa</button>`;
+      document.getElementById("enviar").onclick = async () => {
+        const url = location.href, txt = "Comprovante da nossa mesa na Festa da Primavera (passe da área das mesas):";
+        try { if (navigator.share) await navigator.share({ title: "Passe livre · Festa da Primavera", text: txt, url }); else throw 0; }
+        catch (e) { if (e && e.name === "AbortError") return; try { await navigator.clipboard.writeText(url); document.getElementById("enviar").textContent = "✅ Link copiado"; } catch {} }
+      };
     }
   } catch { erro("Sem conexão. Tente de novo em instantes."); }
 }

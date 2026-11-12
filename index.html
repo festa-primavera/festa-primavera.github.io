@@ -808,8 +808,8 @@ body.modal-aberto{overflow:hidden}
 
 <script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261112-1420";
-import { criarStore } from "./store.js?v=20261112-1420";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261112-1430";
+import { criarStore } from "./store.js?v=20261112-1430";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1066,7 +1066,7 @@ Vendedor(a): ${nomeCurto(v.vendedor)}${valida(v.criadoEm) ? `
 Data da compra: ${new Date(v.criadoEm).toLocaleDateString("pt-BR", { timeZone: "America/Manaus" })} às ${new Date(v.criadoEm).toLocaleTimeString("pt-BR", { timeZone: "America/Manaus", hour: "2-digit", minute: "2-digit" })}` : ""}
 
 🎟️ ${m.length > 1 ? `Cada mesa dá direito a ${INGRESSOS_POR_MESA} ingressos (total: ${INGRESSOS_POR_MESA * m.length})` : `A mesa dá direito a ${INGRESSOS_POR_MESA} ingressos`} para entrada na festa.
-🔒 A área das mesas é fechada, só para quem comprou a mesa. Guarde este comprovante: ele é o seu passe para sair e voltar à área das mesas.
+🔒 A área das mesas é fechada, só para quem comprou a mesa. Guarde este comprovante: ele é o seu passe para sair e voltar à área das mesas. Cada pessoa da mesa pode abrir o comprovante digital no próprio celular lendo o QR Code.
 📌 O número da mesa é só para controle das vendas. No dia da festa, as mesas são ocupadas por ordem de chegada.`;
 };
 // Todas as mesas compradas pelo mesmo comprador para o mesmo aluno
@@ -1144,9 +1144,11 @@ async function desenharComprovante(v) {
     for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q.isDark(r, k)) x.fillRect(P + 30 + off + k * cel, y + off + r * cel, cel, cel);
   }
   let ty = y + 34; x.fillStyle = "#12343B"; x.font = `700 25px ${SANS}`;
-  ["A área das mesas é fechada: só entra quem comprou a mesa.",
-   "Guarde este comprovante! Ele é o seu passe para sair e voltar à área das mesas (água, comida e outros itens são vendidos fora dela).",
-   ...(passe ? ["Na entrada, mostre o QR Code."] : [])].forEach((t, i) => {
+  (passe ? ["A área das mesas é fechada: só entra quem comprou a mesa. Água, comida e outros itens são vendidos fora dela.",
+    "Cada pessoa da mesa pode ter o seu passe: aponte a câmera do celular para o QR Code e abra o comprovante digital.",
+    "Para sair e voltar, mostre na entrada o comprovante impresso ou o digital no celular."]
+   : ["A área das mesas é fechada: só entra quem comprou a mesa.",
+    "Guarde este comprovante! Ele é o seu passe para sair e voltar à área das mesas (água, comida e outros itens são vendidos fora dela)."]).forEach((t, i) => {
     if (i) ty += 12;
     quebrarTexto(x, t, larg).forEach((l) => { x.fillText(l, tx, ty); ty += 34; });
   });
