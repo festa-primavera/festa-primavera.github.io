@@ -1138,7 +1138,7 @@ async function desenharComprovante(v) {
   const QR = 270, tx = passe ? P + 30 + QR + 34 : P + 30, larg = W - P - 30 - tx;
   if (passe) {
     const q = qrcode(0, "M"); q.addData(urlPasse(passe)); q.make();
-    const n = q.getModuleCount(), cel = Math.floor((QR - 24) / n), off = (QR - cel * n) / 2;
+    const n = q.getModuleCount(), cel = Math.floor(QR / (n + 8)), off = (QR - cel * n) / 2;
     x.fillStyle = "#fff"; x.strokeStyle = "#D5E7EA"; x.lineWidth = 3; x.beginPath(); x.roundRect(P + 30, y, QR, QR, 18); x.fill(); x.stroke();
     x.fillStyle = "#0B2A30";
     for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q.isDark(r, k)) x.fillRect(P + 30 + off + k * cel, y + off + r * cel, cel, cel);
