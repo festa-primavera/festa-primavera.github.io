@@ -206,7 +206,8 @@ function doPost(e) {
       // Professor(a) ou funcionário(a) compra sem aluno vinculado
       const prof = v.tipo === 'professor';
       if (prof) { v.aluno = ''; v.serie = 'Professor(a)'; v.turma = ''; }
-      else if (TURMAS.indexOf(v.turma) < 0 && !(v.turma === 'D' && v.serie === '7º Ano')) throw new Error('Turma inválida.'); // 7º Ano também tem turma D
+      else if (v.tipo === 'eja') { v.aluno = v.comprador; v.serie = 'EJA'; v.turma = ''; } // aluno(a) da EJA compra para si
+      if (!prof && v.tipo !== 'eja' && TURMAS.indexOf(v.turma) < 0 && !(v.turma === 'D' && v.serie === '7º Ano')) throw new Error('Turma inválida.'); // 7º Ano também tem turma D
       if (!String(v.comprador || '').trim() || (!prof && !String(v.aluno || '').trim()))
         throw new Error(prof ? 'Preencha o nome do comprador.' : 'Preencha comprador e aluno.');
       const tel = v.telefone ? telefone_(v.telefone) : ''; // telefone é opcional

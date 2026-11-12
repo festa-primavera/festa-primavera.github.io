@@ -717,6 +717,7 @@ body.modal-aberto{overflow:hidden}
         <div class="seg seg-pag seg-tipo" id="seg-tipo">
           <input type="radio" name="tipo" id="tp0" value="responsavel"><label for="tp0">👨‍👩‍👧 Pai, mãe ou responsável por aluno</label>
           <input type="radio" name="tipo" id="tp1" value="professor"><label for="tp1">🍎 Professor(a) ou funcionário(a) da escola</label>
+          <input type="radio" name="tipo" id="tp2" value="eja"><label for="tp2">🎓 Aluno(a) da EJA (o próprio aluno compra)</label>
         </div>
         <div class="erro" data-erro-passo role="alert"></div>
       </section>
@@ -807,8 +808,8 @@ body.modal-aberto{overflow:hidden}
 
 <script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261111-2025";
-import { criarStore } from "./store.js?v=20261111-2025";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261112-1340";
+import { criarStore } from "./store.js?v=20261112-1340";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -819,7 +820,8 @@ const iniciais = (n) => n.split(" ").filter((p) => p.length > 2).slice(0, 1).con
 const primeiroNome = (n) => n.split(" ")[0][0] + n.split(" ")[0].slice(1).toLowerCase();
 // Na tela aparece só o primeiro nome do vendedor (o nome completo continua sendo a identificação)
 const ehProf = (v) => v && v.serie === "Professor(a)";
-const quemAluno = (v) => ehProf(v) ? "Professor(a) / funcionário(a) da escola" : `Aluno: ${v.aluno} · ${v.serie} ${v.turma}`;
+const ehEja = (v) => v && v.serie === "EJA";
+const quemAluno = (v) => ehProf(v) ? "Professor(a) / funcionário(a) da escola" : ehEja(v) ? "Aluno(a) da EJA" : `Aluno: ${v.aluno} · ${v.serie} ${v.turma}`;
 const nomeCurto = (n) => (n ? ({ "MARCIA": "Márcia" }[n.split(" ")[0]] || primeiroNome(n)) : "");
 
 let vendidas = [], vendas = [], selecionadas = [], anteriores = new Set(), primeiraCarga = true;
@@ -1021,7 +1023,7 @@ function renderLista() {
     <div class="vm">Mesa<b>${v.mesa}</b></div>
     <div class="vi">
       <b>${marca(v.comprador)}</b>
-      <span>${ehProf(v) ? "🍎 Professor(a) / funcionário(a)" : `Aluno: ${marca(v.aluno)} · ${esc(v.serie)} ${esc(v.turma)}`}</span>
+      <span>${ehProf(v) ? "🍎 Professor(a) / funcionário(a)" : ehEja(v) ? "🎓 Aluno(a) da EJA" : `Aluno: ${marca(v.aluno)} · ${esc(v.serie)} ${esc(v.turma)}`}</span>
       <span>${esc(v.pagamento)} · ${brl(v.valor)} · vendida por ${esc(nomeCurto(v.vendedor))}${v.pagamento === "PIX" ? (valida(v.pixOk) ? ' · <b class="pix-ok">PIX confirmado</b>' : ' · <b class="pix-pend">PIX a confirmar</b>') : ""}</span>
       ${valida(v.criadoEm) ? `<span>🕒 Vendida em ${quando(v.criadoEm)}</span>` : ""}
       ${grupoDe(v).length > 1 ? `<span class="grupo">Comprou ${grupoDe(v).length} mesas: ${listaMesas(grupoDe(v).map((x) => x.mesa))}</span>` : ""}
@@ -1058,7 +1060,7 @@ E.M. Dep. Federal Ulisses Guimarães — ${dataFesta("ddmmaaaa")}
 
 ✅ ${m.length > 1 ? `Mesas nº *${listaMesas(m)}* garantidas!` : `Mesa nº *${m[0]}* garantida!`}
 Comprador: ${v.comprador}
-${ehProf(v) ? "Professor(a) / funcionário(a) da escola" : `Aluno: ${v.aluno} (${v.serie} ${v.turma})`}
+${ehProf(v) ? "Professor(a) / funcionário(a) da escola" : ehEja(v) ? "Aluno(a) da EJA" : `Aluno: ${v.aluno} (${v.serie} ${v.turma})`}
 Pagamento: ${v.pagamento} — ${brl(v.total ?? v.valor)}
 Vendedor(a): ${nomeCurto(v.vendedor)}${valida(v.criadoEm) ? `
 Data da compra: ${new Date(v.criadoEm).toLocaleDateString("pt-BR", { timeZone: "America/Manaus" })} às ${new Date(v.criadoEm).toLocaleTimeString("pt-BR", { timeZone: "America/Manaus", hour: "2-digit", minute: "2-digit" })}` : ""}
@@ -1113,7 +1115,7 @@ async function desenharComprovante(v) {
     quebrarTexto(x, val, W - 2 * P - 60).forEach((l) => { x.fillText(l, P + 30, y); y += 50; }); y += 26;
   };
   linha("Comprador", v.comprador);
-  if (ehProf(v)) linha("Comprador é", "Professor(a) da escola"); else linha("Aluno", `${v.aluno} · ${v.serie} ${v.turma}`);
+  if (ehProf(v)) linha("Comprador é", "Professor(a) da escola"); else if (ehEja(v)) linha("Comprador é", "Aluno(a) da EJA"); else linha("Aluno", `${v.aluno} · ${v.serie} ${v.turma}`);
   linha("Pagamento", `${v.pagamento} — ${brl(v.total ?? v.valor)}`, "#0E9F84");
   linha("Vendedor(a)", nomeCurto(v.vendedor));
   if (valida(v.criadoEm)) linha("Data da compra", new Date(v.criadoEm).toLocaleDateString("pt-BR", TZ) + " às " + hora(v.criadoEm));
@@ -1125,9 +1127,9 @@ async function desenharComprovante(v) {
   x.fillStyle = "#5A7479"; x.font = `700 25px ${SANS}`;
   x.fillText("O número da mesa é só para controle das vendas.", W / 2, yp + 108);
   x.fillText("As mesas são ocupadas por ordem de chegada.", W / 2, yp + 144);
-  x.font = `700 22px ${SANS}`; x.fillText("festa-primavera.github.io", W / 2, yp + 192); x.textAlign = "left";
+  x.textAlign = "left";
   // monta a imagem final na altura exata
-  const H = yp + 270, fim = document.createElement("canvas"); fim.width = W; fim.height = H;
+  const H = yp + 215, fim = document.createElement("canvas"); fim.width = W; fim.height = H;
   const f = fim.getContext("2d");
   f.drawImage(c, 0, 0);
   f.fillStyle = "#F1F8FA"; f.fillRect(0, 430, W, H - 430);
@@ -1657,8 +1659,10 @@ function marcarMesa() {
 const PASSOS = ["vendedor", "tipo", "comprador", "aluno", "serie", "pagamento", "revisao"];
 let passoAtual = "comprador", passosVenda = PASSOS, editando = false;
 const ehProfVenda = () => valorDe("tipo") === "professor";
-// Professor(a)/funcionário(a) não tem aluno: pula os passos do aluno e da série
-const passosVisiveis = () => passosVenda.filter((p) => !(ehProfVenda() && (p === "aluno" || p === "serie")));
+const ehEjaVenda = () => valorDe("tipo") === "eja";
+const semAluno = () => ehProfVenda() || ehEjaVenda();
+// Professor(a)/funcionário(a) e aluno(a) da EJA: pula os passos do aluno e da série
+const passosVisiveis = () => passosVenda.filter((p) => !(semAluno() && (p === "aluno" || p === "serie")));
 function infoAssistente() {
   const n = selecionadas.length;
   $("#ass-mesas").textContent = n > 1 ? `Mesas ${listaMesas(selecionadas)}` : `Mesa ${selecionadas[0] ?? ""}`;
@@ -1673,8 +1677,8 @@ function irPasso(p, volta) {
   infoAssistente();
   if (p === "revisao") montarRevisao();
   if (p === "comprador") {
-    $("#tit-comprador").textContent = ehProfVenda() ? "Qual é o nome do(a) professor(a) ou funcionário(a)?" : "Qual é o nome do comprador?";
-    $("#dica-comprador").textContent = ehProfVenda() ? "Quem está comprando a mesa." : "Quem está pagando pela mesa (pai, mãe ou responsável).";
+    $("#tit-comprador").textContent = ehProfVenda() ? "Qual é o nome do(a) professor(a) ou funcionário(a)?" : ehEjaVenda() ? "Qual é o nome do(a) aluno(a) da EJA?" : "Qual é o nome do comprador?";
+    $("#dica-comprador").textContent = ehProfVenda() ? "Quem está comprando a mesa." : ehEjaVenda() ? "O(a) próprio(a) aluno(a) é o responsável pela compra." : "Quem está pagando pela mesa (pai, mãe ou responsável).";
   }
   const foco = { vendedor: sessao ? null : ($("#sel-vendedor").value ? "#pin" : "#lista-vend .nome-btn"), comprador: "#in-comprador", aluno: "#in-aluno" }[p];
   $("#form-venda").scrollTop = 0;
@@ -1714,7 +1718,7 @@ function montarRevisao() {
   const linhas = [
     ["Mesa" + (n > 1 ? "s" : ""), n > 1 ? listaMesas(selecionadas) : selecionadas[0], null],
     ["Comprador", f.comprador.value.trim().toUpperCase(), "comprador"],
-    ...(ehProfVenda() ? [["Comprador é", "Professor(a) / funcionário(a)", "tipo"]] : [
+    ...(ehProfVenda() ? [["Comprador é", "Professor(a) / funcionário(a)", "tipo"]] : ehEjaVenda() ? [["Comprador é", "Aluno(a) da EJA", "tipo"]] : [
       ["Aluno", f.aluno.value.trim().toUpperCase(), "aluno"],
       ["Série e turma", `${valorDe("serie")} ${valorDe("turma")}`, "serie"]]),
     ["Pagamento", valorDe("pagamento"), "pagamento"],
@@ -1740,7 +1744,7 @@ $("#seg-tipo").addEventListener("click", (e) => {
   setTimeout(() => {
     if (passoAtual !== "tipo") return;
     // trocou para responsável vindo da conferência: precisa preencher aluno e série
-    if (editando && !ehProfVenda() && (!$("#in-aluno").value.trim() || !valorDe("serie"))) editando = false;
+    if (editando && !semAluno() && (!$("#in-aluno").value.trim() || !valorDe("serie"))) editando = false;
     avancar();
   }, 220);
 });
@@ -1770,10 +1774,11 @@ $("#form-venda").addEventListener("submit", async (e) => {
     turma: f.get("turma"), pagamento: f.get("pagamento"), tipo: f.get("tipo") || "responsavel",
   };
   if (v.tipo === "professor") { v.aluno = ""; v.serie = "Professor(a)"; v.turma = ""; }
+  if (v.tipo === "eja") { v.aluno = v.comprador; v.serie = "EJA"; v.turma = ""; } // o próprio aluno é o responsável
   const faltando = [
     [!v.mesas.length, "a mesa"], [!(v.valor > 0), "o valor"],
-    [!v.comprador, "o nome do comprador"], [v.tipo !== "professor" && !v.aluno, "o nome do aluno"], [!v.serie, "a série"],
-    [v.tipo !== "professor" && !v.turma, "a turma"], [!v.pagamento, "a forma de pagamento"],
+    [!v.comprador, "o nome do comprador"], [!["professor", "eja"].includes(v.tipo) && !v.aluno, "o nome do aluno"], [!v.serie, "a série"],
+    [!["professor", "eja"].includes(v.tipo) && !v.turma, "a turma"], [!v.pagamento, "a forma de pagamento"],
   ].filter(([x]) => x).map(([, t]) => t);
   if (!v.mesas.length) { fecharAssistente(); $("#mapa-vendas").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
   if (!sessao) { passosVenda = PASSOS; irPasso("vendedor", true); return; }
