@@ -355,6 +355,12 @@ body.modal-aberto{overflow:hidden}
 #modal-pix .pix-valor{font-size:30px}
 .pix-ok{color:var(--green-2)!important;font-weight:800!important}
 .pix-pend{color:#B26A00!important;font-weight:800!important}
+.admin-card{display:grid;gap:12px;border:2px dashed var(--line)}
+.admin-ano{font-weight:700;color:var(--muted)}
+.admin-form{display:grid;gap:10px;background:var(--bg);border-radius:14px;padding:12px}
+.admin-form label{display:grid;gap:6px;font-weight:800;font-size:14px}
+.btn-perigo{color:var(--danger)!important;border-color:#F3C7C3!important}
+.btn-perigo-cheio{background:var(--danger)!important;border-color:var(--danger)!important;color:#fff!important}
 /* assistente-fim */
 /* layout-celular-ini */
 .mapa-card{align-self:start}
@@ -424,10 +430,10 @@ body.modal-aberto{overflow:hidden}
   <div class="queda" aria-hidden="true"><i style="--x:59%;--d:10.0s;--a:-8.6s;--s:1.06;--c:#D81F5A"></i><i style="--x:67%;--d:9.9s;--a:-1.9s;--s:1.07;--c:#D81F5A"></i><i style="--x:82%;--d:9.0s;--a:-1.9s;--s:0.93;--c:#F28AA8"></i><i style="--x:13%;--d:8.7s;--a:-8.9s;--s:1.00;--c:#FFB81C"></i><i style="--x:52%;--d:10.4s;--a:-6.5s;--s:1.00;--c:#F28AA8"></i><i style="--x:81%;--d:6.6s;--a:-5.3s;--s:0.77;--c:#F28AA8"></i><i style="--x:32%;--d:8.9s;--a:-7.8s;--s:0.88;--c:#FFB81C"></i><i style="--x:27%;--d:8.6s;--a:-6.4s;--s:0.95;--c:#8FD3F5"></i><i style="--x:12%;--d:8.3s;--a:-2.8s;--s:1.15;--c:#FFC93C"></i><i style="--x:92%;--d:7.5s;--a:-7.6s;--s:0.96;--c:#FFC93C"></i><i style="--x:10%;--d:8.8s;--a:-1.1s;--s:0.79;--c:#FFFFFF"></i><i style="--x:51%;--d:6.8s;--a:-0.2s;--s:1.02;--c:#F28AA8"></i><i style="--x:28%;--d:10.2s;--a:-0.5s;--s:0.90;--c:#8FD3F5"></i><i style="--x:52%;--d:8.2s;--a:-5.7s;--s:0.83;--c:#8FD3F5"></i></div>
   <div class="wrap hero-txt" style="position:relative;z-index:1">
     <div class="escola">Escola Municipal Deputado Federal Ulisses Guimarães</div>
-    <h1>Festa da <em>Primavera</em> 2026</h1>
+    <h1>Festa da <em>Primavera</em> <span data-f-ano>2026</span></h1>
     <div class="subtit">Controle de Mesa</div>
     <div class="chips">
-      <span class="chip">📅 <span class="longo">Quinta, 12 de novembro de 2026</span><span class="curto">Qui, 12/11</span></span>
+      <span class="chip">📅 <span class="longo" data-f-longo>Quinta, 12 de novembro de 2026</span><span class="curto" data-f-curto>Qui, 12/11</span></span>
       <span class="chip" id="contador">⏳ …</span>
     </div>
   </div>
@@ -447,7 +453,7 @@ body.modal-aberto{overflow:hidden}
   <section id="tela-mesas" class="stack" hidden>
     <div class="card esgotado" id="esgotado" role="status">
       <h2>🎉 Mesas esgotadas!</h2>
-      <p>Todas as mesas da Festa da Primavera foram vendidas. Obrigado a todos — nos vemos no dia 12/11!</p>
+      <p>Todas as mesas da Festa da Primavera foram vendidas. Obrigado a todos — nos vemos no dia <span data-f-ddmm>12/11</span>!</p>
     </div>
     <div class="grid2">
       <div class="card">
@@ -610,6 +616,25 @@ body.modal-aberto{overflow:hidden}
       </div>
     </div>
 
+    <div class="card admin-card" id="admin-card" hidden>
+      <div class="card-head"><h2>⚙️ Administração da festa</h2></div>
+      <div class="sub">Visível só para o Alesson.</div>
+      <div class="admin-ano">Festa atual: <b>Festa da Primavera <span data-f-ano>2026</span></b> · <span data-f-longo></span></div>
+      <button type="button" class="btn btn-primary" id="adm-ano">📅 Mudar para&nbsp;<span id="adm-prox">2027</span></button>
+      <div class="admin-form" id="adm-ano-form" hidden>
+        <label>Data da festa de <span id="adm-prox2">2027</span><input type="date" id="adm-data"></label>
+        <div class="erro" id="adm-ano-erro" role="alert"></div>
+        <div class="aviso-acoes"><button type="button" class="btn btn-ghost" id="adm-ano-cancelar">Cancelar</button><button type="button" class="btn btn-primary" id="adm-ano-ok">Confirmar novo ano</button></div>
+      </div>
+      <button type="button" class="btn btn-ghost btn-perigo" id="adm-reset">🗑️ Resetar dados (começar do zero)</button>
+      <div class="admin-form" id="adm-reset-form" hidden>
+        <p class="aviso-destaque">Todas as <b>vendas</b> e <b>prestações de contas</b> serão guardadas em abas de arquivo na planilha (com o ano e a data do reset) e o sistema volta a zero, com as 50 mesas livres.</p>
+        <label>Para confirmar, digite <b>RESETAR</b><input id="adm-reset-txt" autocomplete="off" autocapitalize="characters" placeholder="RESETAR"></label>
+        <div class="erro" id="adm-reset-erro" role="alert"></div>
+        <div class="aviso-acoes"><button type="button" class="btn btn-ghost" id="adm-reset-cancelar">Cancelar</button><button type="button" class="btn btn-primary btn-perigo-cheio" id="adm-reset-ok">Resetar agora</button></div>
+      </div>
+    </div>
+
     <div id="contas-painel" class="stack" hidden>
       <div class="card">
         <div class="card-head"><h2>Prestação de contas</h2><span class="ao-vivo" data-status><i></i>Ao vivo</span></div>
@@ -647,7 +672,7 @@ body.modal-aberto{overflow:hidden}
   </section>
 </main>
 
-<footer>E.M. Dep. Federal Ulisses Guimarães · Festa da Primavera 2026</footer>
+<footer>E.M. Dep. Federal Ulisses Guimarães · Festa da Primavera <span data-f-ano>2026</span></footer>
 <div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-btn" hidden>Ver comprovante</button></div>
 <!-- =============== ASSISTENTE DE VENDA (passo a passo) =============== -->
 <div class="sheet" id="assistente" hidden role="dialog" aria-modal="true" aria-labelledby="ass-pergunta">
@@ -776,8 +801,8 @@ body.modal-aberto{overflow:hidden}
 
 <script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261110-1600";
-import { criarStore } from "./store.js?v=20261110-1600";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261111-2010";
+import { criarStore } from "./store.js?v=20261111-2010";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -794,12 +819,33 @@ const nomeCurto = (n) => (n ? ({ "MARCIA": "Márcia" }[n.split(" ")[0]] || prime
 let vendidas = [], vendas = [], selecionadas = [], anteriores = new Set(), primeiraCarga = true;
 
 // ------------------------------------------------------------ contador
+// Ano e data da festa: vêm da planilha (o Alesson pode mudar para o ano seguinte)
+let FESTA = { ano: Number(DATA_FESTA.slice(0, 4)), data: DATA_FESTA.slice(0, 10) };
+try { const c = JSON.parse(localStorage.getItem("fp-festa")); if (c && c.ano && c.data) FESTA = c; } catch {}
+function dataFesta(f) {
+  const d = new Date(FESTA.data + "T12:00:00-04:00"), o = { timeZone: "America/Manaus" };
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  if (f === "completa") return cap(d.toLocaleDateString("pt-BR", { ...o, weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+  if (f === "longo") return cap(d.toLocaleDateString("pt-BR", { ...o, weekday: "long" }).split("-")[0]) + ", " + d.toLocaleDateString("pt-BR", { ...o, day: "numeric", month: "long", year: "numeric" });
+  if (f === "curto") return cap(d.toLocaleDateString("pt-BR", { ...o, weekday: "short" }).replace(".", "")) + ", " + d.toLocaleDateString("pt-BR", { ...o, day: "2-digit", month: "2-digit" });
+  if (f === "ddmm") return d.toLocaleDateString("pt-BR", { ...o, day: "2-digit", month: "2-digit" });
+  return d.toLocaleDateString("pt-BR", { ...o, day: "2-digit", month: "2-digit", year: "numeric" });
+}
+function aplicarFesta(c) {
+  if (c && c.ano && c.data) { FESTA = { ano: Number(c.ano), data: String(c.data) }; try { localStorage.setItem("fp-festa", JSON.stringify(FESTA)); } catch {} }
+  $$("[data-f-ano]").forEach((e) => (e.textContent = FESTA.ano));
+  $$("[data-f-longo]").forEach((e) => (e.textContent = dataFesta("longo")));
+  $$("[data-f-curto]").forEach((e) => (e.textContent = dataFesta("curto")));
+  $$("[data-f-ddmm]").forEach((e) => (e.textContent = dataFesta("ddmm")));
+  document.title = `Festa da Primavera ${FESTA.ano} · Mesas`;
+  contador();
+}
 function contador() {
-  const alvo = new Date(DATA_FESTA), agora = new Date();
+  const alvo = new Date(FESTA.data + "T00:00:00-04:00"), agora = new Date();
   const dias = Math.ceil((alvo - agora) / 864e5);
   $("#contador").textContent = dias > 1 ? `⏳ Faltam ${dias} dias` : dias === 1 ? "⏳ É amanhã!" : dias === 0 ? "🎉 É hoje!" : "🌼 Festa realizada";
 }
-contador(); setInterval(contador, 60000);
+aplicarFesta(); setInterval(contador, 60000);
 
 // ------------------------------------------------------------ rotas
 function rota() {
@@ -849,6 +895,7 @@ $("#filtro-pag").innerHTML += PAGAMENTOS.map((p) => `<option>${p}</option>`).joi
 if (VALOR_MESA > 0) { const c = $("#valor"); c.type = "text"; c.value = brl(VALOR_MESA); c.readOnly = true; c.tabIndex = -1; }
 // Sessão do vendedor: nome + PIN conferidos pelo script do Google; guardados só neste aparelho
 let sessao = null;
+const ADMIN = "ALESSON MIRANDA PEREIRA"; // só ele vê a administração (resetar / mudar o ano)
 let prestacoes = [], recebendo = null, timerContas = null, contasPronto = false;
 try { sessao = JSON.parse(localStorage.getItem("fp-sessao")) || null; } catch {}
 if (sessao && !VENDEDORES.includes(sessao.nome)) sessao = null;
@@ -895,7 +942,8 @@ function renderResumo() {
   $("#mapa-vendas").innerHTML = ven;
   pintarMesas(); marcarMesa();
   // Próxima mesa livre já vem selecionada (enquanto o vendedor não escolher outra)
-  if (autoSel && selecionadas.some((m) => vendidas.includes(m))) { $("#sel-mesa").value = ""; marcarMesa(); }
+  const primeiraLivre = Array.from({ length: TOTAL_MESAS }, (_, i) => i + 1).find((m) => !vendidas.includes(m));
+  if (autoSel && (selecionadas.some((m) => vendidas.includes(m)) || (selecionadas.length === 1 && selecionadas[0] !== primeiraLivre))) { $("#sel-mesa").value = ""; marcarMesa(); }
   if (!selecionadas.length && !limpouSel) {
     const livre = Array.from({ length: TOTAL_MESAS }, (_, i) => i + 1).find((m) => !vendidas.includes(m));
     if (livre) { $("#sel-mesa").value = String(livre); autoSel = true; marcarMesa(); }
@@ -999,8 +1047,8 @@ function toast(msg, comprovante) {
 const listaMesas = (l) => l.length < 2 ? String(l[0] ?? "") : l.slice(0, -1).join(", ") + " e " + l[l.length - 1];
 const comprovanteTxt = (v) => {
   const m = v.mesas || [v.mesa];
-  return `🌸 *Festa da Primavera 2026*
-E.M. Dep. Federal Ulisses Guimarães — 12/11/2026
+  return `🌸 *Festa da Primavera ${FESTA.ano}*
+E.M. Dep. Federal Ulisses Guimarães — ${dataFesta("ddmmaaaa")}
 
 ✅ ${m.length > 1 ? `Mesas nº *${listaMesas(m)}* garantidas!` : `Mesa nº *${m[0]}* garantida!`}
 Comprador: ${v.comprador}
@@ -1038,7 +1086,7 @@ async function desenharComprovante(v) {
   x.fillText("ESCOLA MUNICIPAL DEPUTADO FEDERAL ULISSES GUIMARÃES", P, 92);
   x.font = `800 88px ${SERIF}`; x.fillStyle = "#0B4F5C"; x.fillText("Festa da", P, 200);
   const wFesta = x.measureText("Festa da ").width; x.fillStyle = "#D81F5A"; x.fillText("Primavera", P + wFesta, 200);
-  x.fillStyle = "#0B4F5C"; x.font = `700 34px ${SANS}`; x.fillText("Quinta-feira, 12 de novembro de 2026", P, 268);
+  x.fillStyle = "#0B4F5C"; x.font = `700 34px ${SANS}`; x.fillText(dataFesta("completa"), P, 268);
   x.fillStyle = "#0B4F5C"; x.beginPath(); x.roundRect(P, 312, 430, 64, 32); x.fill();
   x.fillStyle = "#fff"; x.font = `800 28px ${SANS}`; x.fillText("✓  COMPROVANTE DE MESA", P + 28, 354);
   // cartão branco (desenhado no fim, por baixo, quando a altura já é conhecida)
@@ -1208,7 +1256,7 @@ $("#comp-share").addEventListener("click", async () => {
   const arq = new File([blob], nome, { type: "image/png" });
   try {
     if (navigator.canShare && navigator.canShare({ files: [arq] })) {
-      await navigator.share({ files: [arq], title: "Comprovante – Festa da Primavera 2026" });
+      await navigator.share({ files: [arq], title: `Comprovante – Festa da Primavera ${FESTA.ano}` });
       return;
     }
   } catch (e) { if (e && e.name === "AbortError") return; }
@@ -1223,6 +1271,7 @@ store.autenticar(sessao);
 $("#aviso-demo").hidden = store.modo !== "demo";
 const status = (ok) => $$("[data-status]").forEach((e) => { e.classList.toggle("off", !ok); e.lastChild.textContent = ok ? "Ao vivo" : "Sem conexão"; });
 
+store.onConfig && store.onConfig(aplicarFesta);
 store.onPublico((l) => { vendidas = l.map(Number); status(true); renderResumo(); }, () => status(false));
 window.addEventListener("offline", () => status(false));
 window.addEventListener("online", () => status(true));
@@ -1285,6 +1334,7 @@ function contasPorVendedor() {
 }
 function renderContas() {
   const logado = ehTesoureiro();
+  $("#admin-card").hidden = !(sessao && sessao.nome === ADMIN);
   $("#contas-login").hidden = !!sessao; $("#contas-painel").hidden = !logado;
   $("#minha-painel").hidden = !sessao || logado;
   if (sessao && !logado) return renderMinha();
@@ -1408,6 +1458,40 @@ $("#entrar-rc").addEventListener("click", async () => {
   finally { bt.disabled = false; bt.textContent = "Entrar"; }
 });
 $("#pin-rc").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#entrar-rc").click(); } });
+
+// ------------------------------------------------------------ administração (só o Alesson)
+function prepararAdmin() {
+  const prox = FESTA.ano + 1;
+  $("#adm-prox").textContent = prox; $("#adm-prox2").textContent = prox;
+  $("#adm-data").value = `${prox}${FESTA.data.slice(4)}`; $("#adm-data").min = `${prox}-01-01`; $("#adm-data").max = `${prox}-12-31`;
+}
+$("#adm-ano").addEventListener("click", () => { prepararAdmin(); $("#adm-ano-form").hidden = false; $("#adm-ano-erro").textContent = ""; });
+$("#adm-ano-cancelar").addEventListener("click", () => ($("#adm-ano-form").hidden = true));
+$("#adm-ano-ok").addEventListener("click", async () => {
+  const bt = $("#adm-ano-ok"), ano = FESTA.ano + 1, data = $("#adm-data").value;
+  if (!data || Number(data.slice(0, 4)) !== ano) { $("#adm-ano-erro").textContent = `Escolha uma data em ${ano}.`; return; }
+  bt.disabled = true; bt.textContent = "Salvando…";
+  try {
+    const r = await store.mudarAno({ ano, data }, sessao.pin);
+    aplicarFesta(r.config || { ano, data }); $("#adm-ano-form").hidden = true; prepararAdmin();
+    toast(`Pronto! Agora é a Festa da Primavera ${ano}. 🌸`);
+  } catch (e) { $("#adm-ano-erro").textContent = e.message || "Não foi possível mudar o ano."; }
+  finally { bt.disabled = false; bt.textContent = "Confirmar novo ano"; }
+});
+$("#adm-reset").addEventListener("click", () => { $("#adm-reset-form").hidden = false; $("#adm-reset-txt").value = ""; $("#adm-reset-erro").textContent = ""; $("#adm-reset-txt").focus(); });
+$("#adm-reset-cancelar").addEventListener("click", () => ($("#adm-reset-form").hidden = true));
+$("#adm-reset-ok").addEventListener("click", async () => {
+  const bt = $("#adm-reset-ok"), txt = $("#adm-reset-txt").value.trim().toUpperCase();
+  if (txt !== "RESETAR") { $("#adm-reset-erro").textContent = "Digite RESETAR para confirmar."; return; }
+  bt.disabled = true; bt.textContent = "Resetando…";
+  try {
+    await store.resetar(sessao.pin);
+    prestacoes = []; $("#adm-reset-form").hidden = true; renderContas();
+    toast("Dados resetados. As vendas antigas ficaram guardadas em abas de arquivo na planilha.");
+  } catch (e) { $("#adm-reset-erro").textContent = e.message || "Não foi possível resetar."; }
+  finally { bt.disabled = false; bt.textContent = "Resetar agora"; }
+});
+prepararAdmin();
 
 // ------------------------------------------------------------ minhas vendas (cada vendedor)
 $("#lista-vend-mv").innerHTML = VENDEDORES.map((v, i) => `<button type="button" class="nome-btn" role="radio" aria-checked="false" data-nome="${esc(v)}"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(v))}</span>${esc(nomeCurto(v))}</button>`).join("");

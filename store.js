@@ -1,5 +1,5 @@
 // Camada de dados: planilha do Google Drive (via Google Apps Script) ou modo demonstração
-import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261110-1600";
+import { APPS_SCRIPT_URL, INTERVALO_ATUALIZACAO } from "./config.js?v=20261111-2010";
 
 export async function criarStore() {
   return APPS_SCRIPT_URL ? planilhaStore() : demoStore();
@@ -8,7 +8,7 @@ export async function criarStore() {
 // ------------------------------------------------- Google Drive (planilha)
 function planilhaStore() {
   let vendas = [], timer = null, auth = null, seq = 0;
-  const ouvPub = new Set(), ouvVen = new Set(), ouvErr = new Set();
+  const ouvPub = new Set(), ouvVen = new Set(), ouvErr = new Set(), ouvCfg = new Set();
 
   const normal = (l) => l.map((v) => ({ ...v, mesa: Number(v.mesa), valor: Number(v.valor),
     criadoEm: v.criadoEm ? new Date(v.criadoEm) : new Date() }));
@@ -27,6 +27,7 @@ function planilhaStore() {
         : await fetch(APPS_SCRIPT_URL + "?t=" + Date.now(), { cache: "no-store" });
       const d = await r.json();
       if (!d.ok) throw new Error(d.erro || "Erro na planilha");
+      if (d.config) ouvCfg.forEach((cb) => cb(d.config));
       if (meu === seq) publicar(d.vendas, d.mesas);
     } catch (e) { ouvErr.forEach((cb) => cb(e)); }
   }
@@ -37,6 +38,7 @@ function planilhaStore() {
     const d = await r.json();
     if (!d.ok) throw new Error(d.erro || "Não foi possível salvar.");
     seq++; publicar(d.vendas, d.mesas);
+    if (d.config) ouvCfg.forEach((cb) => cb(d.config));
     return d;
   }
   function iniciar() {
@@ -55,6 +57,10 @@ function planilhaStore() {
     },
     onPublico(cb, onErr) { ouvPub.add(cb); onErr && ouvErr.add(onErr); iniciar(); },
     onVendas(cb, onErr) { ouvVen.add(cb); onErr && ouvErr.add(onErr); iniciar(); },
+    onConfig(cb) { ouvCfg.add(cb); },
+    // Administração (só o Alesson, com o PIN dele)
+    mudarAno: (r, pin) => enviar({ acao: "mudarAno", vendedor: "ALESSON MIRANDA PEREIRA", ...r, pin }),
+    resetar: (pin) => enviar({ acao: "resetar", confirmacao: "RESETAR", pin }),
     entrar: (vendedor, pin) => enviar({ acao: "entrar", vendedor, pin }),
     vender: (venda, pin) => enviar({ acao: "vender", venda, pin }),
     cancelar: (mesa, pin) => enviar({ acao: "cancelar", mesa, pin }),
@@ -108,6 +114,8 @@ function demoStore() {
     async pix(nome, pin, mesas) { return { pix: { payload: "DEMONSTRACAO-SEM-CHAVE-PIX", valor: 50 * mesas.length, recebedor: "(modo demonstração)" } }; },
     async confirmarPix(nome, pin, mesas) { gravar(ler().map((x) => mesas.includes(x.mesa) ? { ...x, pixOk: new Date().toISOString() } : x)); },
     async pixPrestacao(r) { return { pix: { payload: "DEMONSTRACAO-SEM-CHAVE-PIX", valor: r.valor, recebedor: "(modo demonstração)" } }; },
+    async mudarAno(r) { return { config: r }; },
+    async resetar() { gravar([]); gravarP([]); },
     async minhas(nome) { return lerP().filter((p) => p.vendedor === nome); },
     async estornar(id) { const l = lerP().filter((p) => p.id !== id); gravarP(l); return l; },
     async chegada(mesas, chegou) {

@@ -159,9 +159,24 @@ function telefone_(t) {
   return '(' + d.slice(0, 2) + ') ' + (d.length === 11 ? d.slice(2, 7) + '-' + d.slice(7) : d.slice(2, 6) + '-' + d.slice(6));
 }
 
+// ---- Ano da festa e reinício anual (só o administrador)
+const ADMIN = 'ALESSON MIRANDA PEREIRA';
+function config_() {
+  const p = PropertiesService.getScriptProperties();
+  return { ano: Number(p.getProperty('ANO')) || 2026, data: p.getProperty('DATA_FESTA') || '2026-11-12' };
+}
+// Guarda uma cópia da aba (com todos os dados) antes de zerar
+function arquivar_(ss, sh, nome) {
+  const copia = sh.copyTo(ss);
+  copia.setName(nome);
+  ss.setActiveSheet(copia); ss.moveActiveSheet(ss.getNumSheets());
+  const n = sh.getLastRow();
+  if (n > 1) sh.deleteRows(2, n - 1);
+}
+
 function doGet() {
   // Sem PIN: só quais mesas estão vendidas (nenhum dado de comprador ou de venda)
-  return json_({ ok: true, mesas: lerVendas_().map(function (x) { return x.mesa; }) });
+  return json_({ ok: true, mesas: lerVendas_().map(function (x) { return x.mesa; }), config: config_() });
 }
 
 function doPost(e) {
@@ -225,6 +240,22 @@ function doPost(e) {
       const pend = pendente_(vendas, nome);
       if (valor > pend + 0.001) throw new Error('O valor passa do pendente de ' + nome + ' (R$ ' + pend.toFixed(2).replace('.', ',') + ').');
       pixResp = pixCom_(PIX_CHAVE_RECEBEDOR, PIX_NOME_RECEBEDOR, valor, 'FP26P' + Date.now().toString(36).toUpperCase());
+    } else if (d.acao === 'resetar') {
+      autentica_(ADMIN, d.pin); // só o Alesson
+      if (d.confirmacao !== 'RESETAR') throw new Error('Digite RESETAR para confirmar.');
+      const ss = SpreadsheetApp.openById(PLANILHA_ID), cfg = config_();
+      const quando = Utilities.formatDate(new Date(), 'America/Manaus', 'dd-MM-yyyy HH.mm');
+      // o arquivo leva o ano das vendas (mesmo que o ano da festa já tenha sido trocado)
+      const anoDados = vendas.length && vendas[0].criadoEm ? new Date(vendas[0].criadoEm).getFullYear() : cfg.ano;
+      arquivar_(ss, sh, 'Vendas ' + anoDados + ' (arquivo ' + quando + ')');
+      arquivar_(ss, abaPrest_(), 'Prestações ' + anoDados + ' (arquivo ' + quando + ')');
+      ss.setActiveSheet(ss.getSheets()[0]);
+    } else if (d.acao === 'mudarAno') {
+      autentica_(ADMIN, d.pin); // só o Alesson
+      const ano = Number(d.ano), data = String(d.data || '');
+      if (!(ano >= 2026 && ano <= 2100)) throw new Error('Ano inválido.');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || Number(data.slice(0, 4)) !== ano) throw new Error('A data da festa precisa ser do ano ' + ano + '.');
+      PropertiesService.getScriptProperties().setProperties({ ANO: String(ano), DATA_FESTA: data });
     } else if (d.acao === 'vendas') {
       autentica_(d.vendedor, d.pin); // dados das vendas só para vendedores com PIN
     } else if (d.acao === 'telefones') {
@@ -286,6 +317,7 @@ function doPost(e) {
     const resp = { ok: true, vendas: semTel_(atual), mesas: atual.map(function (x) { return x.mesa; }) };
     if (pixResp) resp.pix = pixResp;
     if (telResp) resp.telefones = telResp;
+    resp.config = config_();
     if (['prestacoes', 'receber', 'estornar'].indexOf(d.acao) >= 0) resp.prestacoes = lerPrest_();
     if (d.acao === 'minhas') resp.prestacoes = lerPrest_().filter(function (p) { return p.vendedor === d.vendedor; });
     return json_(resp);
