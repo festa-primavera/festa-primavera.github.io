@@ -227,14 +227,16 @@ details.mais[open] summary{margin-bottom:8px}
 .mais .filtros-sel{display:flex;gap:8px;flex-wrap:wrap}
 .btn-chegada{background:var(--green-2);color:#fff;flex:1;min-height:46px;font-size:16px}
 .ok-chegou{font-weight:800;color:var(--green-2);flex:1}
-.salao{grid-column:1/-1;display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;align-items:center;background:#F3F8F9;border-radius:12px;padding:10px}
+.salao{grid-column:1/-1;display:grid;gap:8px;background:#F3F8F9;border-radius:12px;padding:10px}
+.sal-qtd{display:flex;flex-wrap:wrap;gap:6px}
+.sal-qtd .qtd{flex:1 0 44px;min-height:48px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--green);font:800 20px "Nunito Sans",system-ui,sans-serif;cursor:pointer}
+.sal-qtd .qtd.on{background:var(--green);border-color:var(--green);color:#fff}
+.sal-corr{justify-self:start;font-size:14px}
 .salao-txt{grid-column:1/-1;padding:0 2px}
 .salao.cheio{background:var(--leaf)}
 .salao-txt{line-height:1.3}.salao-txt small{display:block;font-size:12px;font-weight:700;color:var(--muted)}
 .salao-txt b{font-size:20px;color:var(--green)}.salao.cheio .salao-txt b{color:var(--green-2)}
-.sal-menos,.sal-mais{min-height:48px;font-size:17px;font-weight:800;border-radius:12px}
-.sal-menos{background:#fff;border:1.5px solid var(--line);color:var(--green);font-size:24px;padding:0}
-.sal-mais{background:var(--green-2);color:#fff;padding:0 14px;white-space:nowrap}
+.sal-mais{display:block;width:100%;text-align:center;min-height:52px;font-size:17px;font-weight:800;border-radius:12px;background:var(--green-2);color:#fff;padding:0 14px}
 .salao button:disabled{opacity:.4}
 .busca-grande{font-size:18px;min-height:54px;margin-bottom:10px}
 .filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -817,8 +819,8 @@ body.modal-aberto{overflow:hidden}
 
 <script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261112-1450";
-import { criarStore } from "./store.js?v=20261112-1450";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261112-1500";
+import { criarStore } from "./store.js?v=20261112-1500";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1043,8 +1045,9 @@ function renderLista() {
     ${((g) => { const n = entraramDe(g), lim = INGRESSOS_POR_MESA * g.length, ms = g.map((x) => x.mesa).join(",");
       return `<div class="salao${n >= lim ? " cheio" : ""}">
         <div class="salao-txt"><small>Salão das mesas${g.length > 1 ? ` · ${g.length} mesas` : ""}${v.chegada ? ` · 1ª entrada às ${hora(v.chegada)}` : ""}</small><b>${n} de ${lim}</b> ${n >= lim ? "· todos já entraram" : "pessoas já entraram"}</div>
-        <button class="btn sal-menos" data-entrada="${ms}" data-delta="-1" ${n ? "" : "disabled"} aria-label="Desfazer uma entrada">−</button>
-        <button class="btn sal-mais" data-entrada="${ms}" data-delta="1" ${n >= lim ? "disabled" : ""}>+ Entrou 1 pessoa</button>
+        ${n < lim ? `<div class="sal-qtd" role="group" aria-label="Quantas pessoas entraram agora">${Array.from({ length: lim - n }, (_, i) => `<button type="button" class="qtd${i === lim - n - 1 ? " on" : ""}" data-qtd="${i + 1}">${i + 1}</button>`).join("")}</div>
+        <button class="btn sal-mais" data-entrada="${ms}">${rotEntrada(lim - n)}</button>` : ""}
+        ${n ? `<button class="lnk sal-corr" data-entrada="${ms}" data-corrigir="1">Corrigir (−1)</button>` : ""}
       </div>`; })(grupoDe(v))}
     <div class="vlinks">${v.chegada && !entraramDe(grupoDe(v)) ? `<button class="lnk" data-desfazer="${v.mesa}">Desfazer chegada</button>` : ""}<button class="lnk" data-copiar="${v.mesa}">Comprovante</button><button class="lnk" data-imprimir="${v.mesa}">🖨️ Imprimir</button><button class="lnk del" data-cancelar="${v.mesa}">Cancelar venda</button></div>
   </article>`).join("") : `<div class="vazio">${vendas.length ? "Nenhuma venda encontrada. Confira a grafia ou busque pelo nome do aluno." : "Nenhuma venda ainda. A primeira mesa está esperando! 🌱"}</div>`;
@@ -1085,6 +1088,7 @@ Data da compra: ${new Date(v.criadoEm).toLocaleDateString("pt-BR", { timeZone: "
 📌 O número da mesa é só para controle das vendas. No dia da festa, as mesas são ocupadas por ordem de chegada.`;
 };
 // Todas as mesas compradas pelo mesmo comprador para o mesmo aluno
+const rotEntrada = (q) => `✓ Registrar ${q} ${q > 1 ? "pessoas" : "pessoa"}`;
 const entraramDe = (g) => Math.max(0, ...g.map((x) => Number(x.entraram) || 0));
 const grupoDe = (v) => vendas.filter((x) => x.comprador === v.comprador && x.aluno === v.aluno).sort((a, b) => a.mesa - b.mesa);
 // ------------------------------------------------------------ comprovante em imagem
@@ -1866,9 +1870,15 @@ $("#lista").addEventListener("click", async (e) => {
     catch (err) { (ok || un).disabled = false; toast("Não foi possível salvar: " + err.message); }
     return;
   }
+  const qb = e.target.closest("[data-qtd]");
+  if (qb) {
+    const box = qb.closest(".salao"); box.querySelectorAll("[data-qtd]").forEach((b) => b.classList.toggle("on", b === qb));
+    box.querySelector(".sal-mais").textContent = rotEntrada(+qb.dataset.qtd); return;
+  }
   const en = e.target.closest("[data-entrada]");
   if (en) {
-    const mesas = en.dataset.entrada.split(",").map(Number), delta = Number(en.dataset.delta);
+    const mesas = en.dataset.entrada.split(",").map(Number);
+    const delta = en.dataset.corrigir ? -1 : Number((en.closest(".salao").querySelector("[data-qtd].on") || {}).dataset?.qtd || 1);
     en.closest(".salao").querySelectorAll("button").forEach((b) => (b.disabled = true));
     try {
       await store.entrada(mesas, delta, sessao);

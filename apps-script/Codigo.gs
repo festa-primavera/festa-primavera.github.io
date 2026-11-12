@@ -277,9 +277,12 @@ function doPost(e) {
       }
       if (!linhas.length) throw new Error('Mesa sem venda registrada.');
       const limite = INGRESSOS_POR_MESA * linhas.length;
-      const delta = Number(d.delta) > 0 ? 1 : -1;
-      if (delta > 0 && atualE >= limite) throw new Error('Esta compra já usou os ' + limite + ' ingressos: todos já entraram.');
-      const novo = Math.max(0, Math.min(limite, atualE + delta));
+      // qtd = quantas pessoas entraram agora (negativo corrige um registro errado)
+      const qtd = Math.trunc(Number(d.qtd != null ? d.qtd : (Number(d.delta) > 0 ? 1 : -1)));
+      if (!qtd) throw new Error('Informe a quantidade.');
+      if (qtd > 0 && atualE >= limite) throw new Error('Esta compra já usou os ' + limite + ' ingressos: todos já entraram.');
+      if (qtd > 0 && atualE + qtd > limite) throw new Error('Só ' + (limite - atualE === 1 ? 'resta 1 entrada' : 'restam ' + (limite - atualE) + ' entradas') + ' para esta compra.');
+      const novo = Math.max(0, Math.min(limite, atualE + qtd));
       if (sh.getRange(1, 14).getValue() === '') sh.getRange(1, 14).setValue('Entraram');
       linhas.forEach(function (r) {
         sh.getRange(r, 14).setValue(novo);

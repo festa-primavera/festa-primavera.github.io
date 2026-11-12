@@ -65,7 +65,7 @@ function planilhaStore() {
     vender: (venda, pin) => enviar({ acao: "vender", venda, pin }),
     cancelar: (mesa, pin) => enviar({ acao: "cancelar", mesa, pin }),
     chegada: (mesas, chegou, s) => enviar({ acao: "chegada", mesas: [].concat(mesas), chegou, vendedor: s && s.nome, pin: s && s.pin }),
-    entrada: (mesas, delta, s) => enviar({ acao: "entrada", mesas: [].concat(mesas), delta, vendedor: s && s.nome, pin: s && s.pin }),
+    entrada: (mesas, qtd, s) => enviar({ acao: "entrada", mesas: [].concat(mesas), qtd, vendedor: s && s.nome, pin: s && s.pin }),
     // Prestação de contas (só o recebedor, com o PIN dele)
     prestacoes: async (pin) => (await enviar({ acao: "prestacoes", pin })).prestacoes || [],
     receber: async (r, pin) => (await enviar({ acao: "receber", ...r, pin })).prestacoes || [],
@@ -123,9 +123,9 @@ function demoStore() {
       const lista = [].concat(mesas);
       gravar(ler().map((x) => lista.includes(x.mesa) ? { ...x, chegada: chegou ? new Date().toISOString() : "" } : x));
     },
-    async entrada(mesas, delta) {
+    async entrada(mesas, qtd) {
       const lista = [].concat(mesas), l = ler(), g = l.filter((x) => lista.includes(x.mesa));
-      const n = Math.max(0, Math.min(4 * g.length, Math.max(0, ...g.map((x) => x.entraram || 0)) + (delta > 0 ? 1 : -1)));
+      const n = Math.max(0, Math.min(4 * g.length, Math.max(0, ...g.map((x) => x.entraram || 0)) + qtd));
       gravar(l.map((x) => lista.includes(x.mesa) ? { ...x, entraram: n, chegada: n ? (x.chegada || new Date().toISOString()) : "" } : x));
     },
   };
