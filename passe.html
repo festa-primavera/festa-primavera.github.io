@@ -38,6 +38,7 @@ dd{margin:2px 0 0;font-weight:800;font-size:19px}
 .regras{margin-top:20px;padding-top:16px;border-top:3px dashed var(--line);display:grid;gap:10px;font-size:15px}
 .regras p{margin:0;display:flex;gap:10px}
 .enviar{margin-top:20px;width:100%;min-height:54px;border:0;border-radius:16px;background:var(--green);color:#fff;font:800 17px "Nunito Sans",system-ui,sans-serif;cursor:pointer}
+dd.cheio{color:var(--pink)}
 .carregando{color:var(--muted);text-align:center;padding:30px 0}
 </style>
 </head>
@@ -83,6 +84,7 @@ else {
         <dl>
           <dt>Comprador</dt><dd>${esc(p.comprador)}</dd>
           <dt>Ingressos para a festa</dt><dd>${p.ingressos} ingressos${n > 1 ? ` (${n} mesas)` : ""}</dd>
+          <dt>Entraram no salão das mesas</dt><dd class="${(p.entraram || 0) >= p.ingressos ? "cheio" : ""}">${p.entraram || 0} de ${p.ingressos}${(p.entraram || 0) >= p.ingressos ? " · todos já entraram" : ""}</dd>
           ${quando ? `<dt>Data da compra</dt><dd>${esc(quando)}</dd>` : ""}
         </dl>
         <div class="regras">

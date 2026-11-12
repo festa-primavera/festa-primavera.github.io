@@ -36,6 +36,7 @@ function lerVendas_() {
         pixOk: iso_(r[10]),
         telefone: String(r[11] || ''),
       passe: String(r[12] || ''),
+      entraram: Number(r[13]) || 0,
       };
     });
 }
@@ -202,7 +203,8 @@ function passe_(cod) {
   const ms = g.map(function (x) { return x.mesa; }).sort(function (a, b) { return a - b; });
   return { ok: true, config: config_(), passe: {
     comprador: g[0].comprador, mesas: ms, ingressos: INGRESSOS_POR_MESA * ms.length,
-    criadoEm: g[0].criadoEm, chegada: g.some(function (x) { return x.chegada; }) } };
+    criadoEm: g[0].criadoEm, chegada: g.some(function (x) { return x.chegada; }),
+    entraram: Math.max.apply(null, g.map(function (x) { return x.entraram; })) } };
 }
 
 function doGet(e) {
@@ -264,6 +266,26 @@ function doPost(e) {
         if (alvo.indexOf(Number(col[i][0])) >= 0) { sh.getRange(i + 1, 10).setValue(d.chegou ? new Date() : ''); achou++; }
       }
       if (!achou) throw new Error('Mesa sem venda registrada.');
+    } else if (d.acao === 'entrada') {
+      autentica_(d.vendedor, d.pin); // só a equipe registra quem entrou no salão das mesas
+      // Salão das mesas: conta quantas pessoas da compra já entraram (até 4 por mesa)
+      const alvo = (Array.isArray(d.mesas) ? d.mesas : [d.mesa]).map(Number);
+      const col = sh.getRange(1, 1, sh.getLastRow(), 14).getValues(), linhas = [];
+      let atualE = 0;
+      for (let i = 1; i < col.length; i++) {
+        if (col[i][0] !== '' && alvo.indexOf(Number(col[i][0])) >= 0) { linhas.push(i + 1); atualE = Math.max(atualE, Number(col[i][13]) || 0); }
+      }
+      if (!linhas.length) throw new Error('Mesa sem venda registrada.');
+      const limite = INGRESSOS_POR_MESA * linhas.length;
+      const delta = Number(d.delta) > 0 ? 1 : -1;
+      if (delta > 0 && atualE >= limite) throw new Error('Esta compra já usou os ' + limite + ' ingressos: todos já entraram.');
+      const novo = Math.max(0, Math.min(limite, atualE + delta));
+      if (sh.getRange(1, 14).getValue() === '') sh.getRange(1, 14).setValue('Entraram');
+      linhas.forEach(function (r) {
+        sh.getRange(r, 14).setValue(novo);
+        if (novo > 0 && col[r - 1][9] === '') sh.getRange(r, 10).setValue(new Date()); // primeira entrada = chegada
+        if (novo === 0) sh.getRange(r, 10).setValue('');
+      });
     } else if (d.acao === 'pixPrestacao') {
       autentica_(TESOUREIRO, d.pin); // só o recebedor gera o QR da prestação de contas
       const nome = String(d.vendedor || '');
