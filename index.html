@@ -620,9 +620,15 @@ body.modal-aberto{overflow:hidden}
       <div class="card-head"><h2>⚙️ Administração da festa</h2></div>
       <div class="sub">Visível só para o Alesson.</div>
       <div class="admin-ano">Festa atual: <b>Festa da Primavera <span data-f-ano>2026</span></b> · <span data-f-longo></span></div>
+      <button type="button" class="btn btn-ghost" id="adm-dt">📆 Alterar data da festa</button>
+      <div class="admin-form" id="adm-dt-form" hidden>
+        <label><span>Nova data da festa</span><input type="date" id="adm-dt-data"></label>
+        <div class="erro" id="adm-dt-erro" role="alert"></div>
+        <div class="aviso-acoes"><button type="button" class="btn btn-ghost" id="adm-dt-cancelar">Cancelar</button><button type="button" class="btn btn-primary" id="adm-dt-ok">Salvar data</button></div>
+      </div>
       <button type="button" class="btn btn-primary" id="adm-ano">📅 Mudar para&nbsp;<span id="adm-prox">2027</span></button>
       <div class="admin-form" id="adm-ano-form" hidden>
-        <label>Data da festa de <span id="adm-prox2">2027</span><input type="date" id="adm-data"></label>
+        <label><span>Data da festa de <span id="adm-prox2">2027</span></span><input type="date" id="adm-data"></label>
         <div class="erro" id="adm-ano-erro" role="alert"></div>
         <div class="aviso-acoes"><button type="button" class="btn btn-ghost" id="adm-ano-cancelar">Cancelar</button><button type="button" class="btn btn-primary" id="adm-ano-ok">Confirmar novo ano</button></div>
       </div>
@@ -801,8 +807,8 @@ body.modal-aberto{overflow:hidden}
 
 <script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261111-2010";
-import { criarStore } from "./store.js?v=20261111-2010";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261111-2025";
+import { criarStore } from "./store.js?v=20261111-2025";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1477,6 +1483,24 @@ $("#adm-ano-ok").addEventListener("click", async () => {
     toast(`Pronto! Agora é a Festa da Primavera ${ano}. 🌸`);
   } catch (e) { $("#adm-ano-erro").textContent = e.message || "Não foi possível mudar o ano."; }
   finally { bt.disabled = false; bt.textContent = "Confirmar novo ano"; }
+});
+// nova data dentro do mesmo ano
+$("#adm-dt").addEventListener("click", () => {
+  const i = $("#adm-dt-data"); i.value = FESTA.data; i.min = `${FESTA.ano}-01-01`; i.max = `${FESTA.ano}-12-31`;
+  $("#adm-dt-erro").textContent = ""; $("#adm-dt-form").hidden = false;
+});
+$("#adm-dt-cancelar").addEventListener("click", () => ($("#adm-dt-form").hidden = true));
+$("#adm-dt-ok").addEventListener("click", async () => {
+  const bt = $("#adm-dt-ok"), ano = FESTA.ano, data = $("#adm-dt-data").value;
+  if (!data || Number(data.slice(0, 4)) !== ano) { $("#adm-dt-erro").textContent = `Escolha uma data em ${ano}.`; return; }
+  if (data === FESTA.data) { $("#adm-dt-form").hidden = true; return; }
+  bt.disabled = true; bt.textContent = "Salvando…";
+  try {
+    const r = await store.mudarAno({ ano, data }, sessao.pin);
+    aplicarFesta(r.config || { ano, data }); $("#adm-dt-form").hidden = true;
+    toast(`Data da festa alterada para ${dataFesta()}. 🌸`);
+  } catch (e) { $("#adm-dt-erro").textContent = e.message || "Não foi possível alterar a data."; }
+  finally { bt.disabled = false; bt.textContent = "Salvar data"; }
 });
 $("#adm-reset").addEventListener("click", () => { $("#adm-reset-form").hidden = false; $("#adm-reset-txt").value = ""; $("#adm-reset-erro").textContent = ""; $("#adm-reset-txt").focus(); });
 $("#adm-reset-cancelar").addEventListener("click", () => ($("#adm-reset-form").hidden = true));
