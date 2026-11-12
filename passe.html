@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Passe livre · Festa da Primavera</title>
+<meta name="theme-color" content="#BFE9FF">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--green:#0B4F5C;--green-2:#0E9F84;--pink:#D81F5A;--ink:#12343B;--muted:#5A7479;--line:#D5E7EA;--bg:#F1F8FA}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 "Nunito Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+.topo{position:relative;padding:28px 20px 70px;background:#BFE9FF url(campo.webp) center bottom/cover no-repeat}
+.topo::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(236,250,255,.92),rgba(236,250,255,.75) 70%,rgba(236,250,255,.3))}
+.topo>*{position:relative}
+.escola{font-weight:800;font-size:12px;letter-spacing:.04em;color:var(--green);margin:0}
+h1{font-family:Fraunces,Georgia,serif;font-size:40px;line-height:1.05;margin:6px 0 4px;color:var(--green)}
+h1 em{font-style:normal;color:var(--pink)}
+.data{font-weight:700;color:var(--green);margin:0}
+main{max-width:520px;margin:-46px auto 0;padding:0 16px 32px;position:relative}
+.card{background:#fff;border-radius:24px;box-shadow:0 12px 40px rgba(11,79,92,.16);padding:22px}
+.selo{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:18px;background:#E3F6F1;color:var(--green-2);font-weight:800;font-size:20px}
+.selo b{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--green-2);color:#fff;font-size:22px;flex:none}
+.selo.ruim{background:#FDE4EC;color:var(--pink)}.selo.ruim b{background:var(--pink)}
+.selo small{display:block;font-size:13px;font-weight:700;color:var(--muted)}
+.num{margin:18px 0 6px;padding:16px;border-radius:18px;background:#FDE4EC;text-align:center}
+.num span{display:block;font-weight:800;font-size:13px;letter-spacing:.06em;color:var(--pink)}
+.num strong{font-family:Fraunces,Georgia,serif;font-size:56px;line-height:1.1;color:var(--pink)}
+dl{margin:14px 0 0}
+dt{font-weight:800;font-size:12px;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;margin-top:14px}
+dd{margin:2px 0 0;font-weight:800;font-size:19px}
+.regras{margin-top:20px;padding-top:16px;border-top:3px dashed var(--line);display:grid;gap:10px;font-size:15px}
+.regras p{margin:0;display:flex;gap:10px}
+.carregando{color:var(--muted);text-align:center;padding:30px 0}
+</style>
+</head>
+<body>
+<header class="topo">
+  <p class="escola">ESCOLA MUNICIPAL DEPUTADO FEDERAL ULISSES GUIMARÃES</p>
+  <h1>Festa da <em>Primavera</em> <span id="ano"></span></h1>
+  <p class="data" id="data">&nbsp;</p>
+</header>
+<main>
+  <div class="card" id="card"><p class="carregando">Carregando comprovante…</p></div>
+</main>
+<script type="module">
+import { APPS_SCRIPT_URL } from "./config.js?v=20261112-1420";
+const card = document.getElementById("card");
+const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const lista = (l) => l.length < 2 ? String(l[0] ?? "") : l.slice(0, -1).join(", ") + " e " + l[l.length - 1];
+const TZ = { timeZone: "America/Manaus" };
+function festa(cfg) {
+  if (!cfg) return;
+  const d = new Date(cfg.data + "T12:00:00-04:00");
+  const s = d.toLocaleDateString("pt-BR", { ...TZ, weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  document.getElementById("ano").textContent = cfg.ano;
+  document.getElementById("data").textContent = s.charAt(0).toUpperCase() + s.slice(1);
+  document.title = `Passe livre · Festa da Primavera ${cfg.ano}`;
+}
+function erro(msg) {
+  card.innerHTML = `<div class="selo ruim"><b>!</b><div>${esc(msg)}<small>Procure a organização da festa.</small></div></div>`;
+}
+const cod = new URLSearchParams(location.search).get("c") || "";
+if (!/^[a-f0-9]{32}$/.test(cod)) erro("Comprovante inválido.");
+else {
+  try {
+    const r = await (await fetch(APPS_SCRIPT_URL + "?passe=" + cod, { cache: "no-store" })).json();
+    festa(r.config);
+    if (!r.ok) erro(r.erro === "Comprovante não encontrado." ? "Comprovante não encontrado ou venda cancelada." : (r.erro || "Comprovante inválido."));
+    else {
+      const p = r.passe, n = p.mesas.length;
+      const quando = p.criadoEm ? new Date(p.criadoEm).toLocaleDateString("pt-BR", TZ) + " às " + new Date(p.criadoEm).toLocaleTimeString("pt-BR", { ...TZ, hour: "2-digit", minute: "2-digit" }) : "";
+      card.innerHTML = `
+        <div class="selo"><b>✓</b><div>Passe livre válido<small>Comprovante de mesa confirmado</small></div></div>
+        <div class="num"><span>COMPROVANTE Nº</span><strong>${esc(lista(p.mesas))}</strong></div>
+        <dl>
+          <dt>Comprador</dt><dd>${esc(p.comprador)}</dd>
+          <dt>Ingressos para a festa</dt><dd>${p.ingressos} ingressos${n > 1 ? ` (${n} mesas)` : ""}</dd>
+          ${quando ? `<dt>Data da compra</dt><dd>${esc(quando)}</dd>` : ""}
+        </dl>
+        <div class="regras">
+          <p>🔒 <span>A área das mesas é fechada: só entra quem comprou a mesa.</span></p>
+          <p>🎟️ <span>Este comprovante é o seu passe para sair e voltar à área das mesas (água, comida e outros itens são vendidos fora dela). Mostre-o na entrada.</span></p>
+          <p>📌 <span>O número é só para controle das vendas. As mesas são ocupadas por ordem de chegada.</span></p>
+        </div>`;
+    }
+  } catch { erro("Sem conexão. Tente de novo em instantes."); }
+}
+</script>
+</body>
+</html>

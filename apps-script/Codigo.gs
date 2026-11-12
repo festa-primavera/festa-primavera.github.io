@@ -35,6 +35,7 @@ function lerVendas_() {
         chegada: iso_(r[9]),
         pixOk: iso_(r[10]),
         telefone: String(r[11] || ''),
+      passe: String(r[12] || ''),
       };
     });
 }
@@ -174,7 +175,38 @@ function arquivar_(ss, sh, nome) {
   if (n > 1) sh.deleteRows(2, n - 1);
 }
 
-function doGet() {
+// ---- Passe livre: cada compra tem um código secreto (coluna M) que vai no QR Code do comprovante
+const INGRESSOS_POR_MESA = 4;
+function chavePasse_(r) { return String(r[1]).trim().toUpperCase() + '|' + String(r[2]).trim().toUpperCase(); }
+// Dá um código às vendas que ainda não têm (as mesas do mesmo comprador/aluno usam o mesmo código)
+function garantirPasses_(sh) {
+  const n = sh.getLastRow(); if (n < 2) return;
+  const r = sh.getRange(2, 1, n - 1, 13).getValues(), cod = {};
+  r.forEach(function (x) { if (x[0] !== '' && x[12]) cod[chavePasse_(x)] = String(x[12]); });
+  let mudou = false;
+  const col = r.map(function (x) {
+    if (x[0] === '' || x[12]) return [x[12]];
+    const k = chavePasse_(x);
+    if (!cod[k]) cod[k] = Utilities.getUuid().replace(/-/g, '');
+    mudou = true; return [cod[k]];
+  });
+  if (!mudou) return;
+  if (sh.getRange(1, 13).getValue() === '') sh.getRange(1, 13).setValue('Passe');
+  sh.getRange(2, 13, n - 1, 1).setNumberFormat('@').setValues(col);
+}
+// Comprovante online: só os dados daquela compra, e só para quem tem o código do QR
+function passe_(cod) {
+  if (!/^[a-f0-9]{32}$/.test(cod)) return { ok: false, erro: 'Comprovante inválido.' };
+  const g = lerVendas_().filter(function (x) { return x.passe === cod; });
+  if (!g.length) return { ok: false, erro: 'Comprovante não encontrado.', config: config_() };
+  const ms = g.map(function (x) { return x.mesa; }).sort(function (a, b) { return a - b; });
+  return { ok: true, config: config_(), passe: {
+    comprador: g[0].comprador, mesas: ms, ingressos: INGRESSOS_POR_MESA * ms.length,
+    criadoEm: g[0].criadoEm, chegada: g.some(function (x) { return x.chegada; }) } };
+}
+
+function doGet(e) {
+  if (e && e.parameter && e.parameter.passe) return json_(passe_(String(e.parameter.passe)));
   // Sem PIN: só quais mesas estão vendidas (nenhum dado de comprador ou de venda)
   return json_({ ok: true, mesas: lerVendas_().map(function (x) { return x.mesa; }), config: config_() });
 }
@@ -314,7 +346,8 @@ function doPost(e) {
       throw new Error('Ação desconhecida.');
     }
     SpreadsheetApp.flush();
-    const atual = lerVendas_();
+    let atual = lerVendas_();
+    if (atual.some(function (x) { return !x.passe; })) { garantirPasses_(sh); SpreadsheetApp.flush(); atual = lerVendas_(); }
     const resp = { ok: true, vendas: semTel_(atual), mesas: atual.map(function (x) { return x.mesa; }) };
     if (pixResp) resp.pix = pixResp;
     if (telResp) resp.telefones = telResp;

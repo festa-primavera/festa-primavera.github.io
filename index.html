@@ -808,8 +808,8 @@ body.modal-aberto{overflow:hidden}
 
 <script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261112-1340";
-import { criarStore } from "./store.js?v=20261112-1340";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261112-1420";
+import { criarStore } from "./store.js?v=20261112-1420";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1065,6 +1065,8 @@ Pagamento: ${v.pagamento} — ${brl(v.total ?? v.valor)}
 Vendedor(a): ${nomeCurto(v.vendedor)}${valida(v.criadoEm) ? `
 Data da compra: ${new Date(v.criadoEm).toLocaleDateString("pt-BR", { timeZone: "America/Manaus" })} às ${new Date(v.criadoEm).toLocaleTimeString("pt-BR", { timeZone: "America/Manaus", hour: "2-digit", minute: "2-digit" })}` : ""}
 
+🎟️ ${m.length > 1 ? `Cada mesa dá direito a ${INGRESSOS_POR_MESA} ingressos (total: ${INGRESSOS_POR_MESA * m.length})` : `A mesa dá direito a ${INGRESSOS_POR_MESA} ingressos`} para entrada na festa.
+🔒 A área das mesas é fechada, só para quem comprou a mesa. Guarde este comprovante: ele é o seu passe para sair e voltar à área das mesas.
 📌 O número da mesa é só para controle das vendas. No dia da festa, as mesas são ocupadas por ordem de chegada.`;
 };
 // Todas as mesas compradas pelo mesmo comprador para o mesmo aluno
@@ -1076,6 +1078,9 @@ function quebrarTexto(ctx, txt, larg) {
   for (const p of pal) { const t = l ? l + " " + p : p; if (ctx.measureText(t).width > larg && l) { linhas.push(l); l = p; } else l = t; }
   if (l) linhas.push(l); return linhas;
 }
+const INGRESSOS_POR_MESA = 4;
+// Endereço do comprovante online (passe livre). Só mostra os dados daquela compra.
+const urlPasse = (cod) => new URL("passe.html?c=" + cod, location.href.split("#")[0]).href;
 const IMG_CAMPO = new Image(); IMG_CAMPO.src = "campo.webp";
 async function desenharComprovante(v) {
   try { await document.fonts.ready; } catch {}
@@ -1119,6 +1124,33 @@ async function desenharComprovante(v) {
   linha("Pagamento", `${v.pagamento} — ${brl(v.total ?? v.valor)}`, "#0E9F84");
   linha("Vendedor(a)", nomeCurto(v.vendedor));
   if (valida(v.criadoEm)) linha("Data da compra", new Date(v.criadoEm).toLocaleDateString("pt-BR", TZ) + " às " + hora(v.criadoEm));
+  // ingressos
+  const nIng = INGRESSOS_POR_MESA * m.length;
+  y += 4; x.fillStyle = "#E3F6F1"; x.beginPath(); x.roundRect(P + 20, y, W - 2 * P - 40, 150, 26); x.fill();
+  x.fillStyle = "#0E9F84"; x.font = `900 ${nIng > 9 ? 80 : 92}px ${SANS}`; x.textAlign = "center"; x.fillText(String(nIng), P + 120, y + 108);
+  x.textAlign = "left"; x.fillStyle = "#0B4F5C"; x.font = `800 34px ${SANS}`; x.fillText("INGRESSOS PARA A FESTA", P + 210, y + 66);
+  x.fillStyle = "#3D5C61"; x.font = `700 26px ${SANS}`;
+  x.fillText(m.length > 1 ? `${INGRESSOS_POR_MESA} ingressos por mesa (${m.length} mesas)` : `Esta mesa dá direito a ${INGRESSOS_POR_MESA} ingressos`, P + 210, y + 108);
+  y += 190;
+  // passe livre (área das mesas) + QR Code do comprovante online
+  const passe = v.passe || ((vendas.find((z) => m.includes(z.mesa) && z.passe) || {}).passe);
+  x.fillStyle = "#0B4F5C"; x.font = `800 30px ${SANS}`; x.fillText("PASSE LIVRE · ÁREA DAS MESAS", P + 30, y); y += 24;
+  const QR = 270, tx = passe ? P + 30 + QR + 34 : P + 30, larg = W - P - 30 - tx;
+  if (passe) {
+    const q = qrcode(0, "M"); q.addData(urlPasse(passe)); q.make();
+    const n = q.getModuleCount(), cel = Math.floor((QR - 24) / n), off = (QR - cel * n) / 2;
+    x.fillStyle = "#fff"; x.strokeStyle = "#D5E7EA"; x.lineWidth = 3; x.beginPath(); x.roundRect(P + 30, y, QR, QR, 18); x.fill(); x.stroke();
+    x.fillStyle = "#0B2A30";
+    for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q.isDark(r, k)) x.fillRect(P + 30 + off + k * cel, y + off + r * cel, cel, cel);
+  }
+  let ty = y + 34; x.fillStyle = "#12343B"; x.font = `700 25px ${SANS}`;
+  ["A área das mesas é fechada: só entra quem comprou a mesa.",
+   "Guarde este comprovante! Ele é o seu passe para sair e voltar à área das mesas (água, comida e outros itens são vendidos fora dela).",
+   ...(passe ? ["Na entrada, mostre o QR Code."] : [])].forEach((t, i) => {
+    if (i) ty += 12;
+    quebrarTexto(x, t, larg).forEach((l) => { x.fillText(l, tx, ty); ty += 34; });
+  });
+  y = Math.max(ty, passe ? y + QR : 0) + 30;
   // picote + rodapé
   const yp = y + 10;
   x.strokeStyle = "#D5E7EA"; x.lineWidth = 4; x.setLineDash([16, 14]); x.beginPath(); x.moveTo(P + 10, yp); x.lineTo(W - P - 10, yp); x.stroke(); x.setLineDash([]);
