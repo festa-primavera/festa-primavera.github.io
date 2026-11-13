@@ -669,6 +669,7 @@ body.modal-aberto{overflow:hidden}
           <div><span>Falta receber</span><b data-c-pendente class="pend">R$ 0,00</b></div>
         </div>
         <div class="barra"><i data-c-barra></i></div>
+        <div data-c-formas></div>
         <div class="nota" data-c-proprio></div>
       </div>
 
@@ -826,8 +827,8 @@ body.modal-aberto{overflow:hidden}
 
 <script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261113-1440";
-import { criarStore } from "./store.js?v=20261113-1440";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261113-1450";
+import { criarStore } from "./store.js?v=20261113-1450";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1382,8 +1383,11 @@ function faltaFormas(minhas, ps) {
     if (v.pagamento === "PIX") fp += val - usa; else fd += val - usa;
   });
   fd = Math.round(fd * 100) / 100; fp = Math.round(fp * 100) / 100;
+  return { fd, fp };
+}
+function faltaFormasHtml(fd, fp, rot = "Falta prestar") {
   const it = (rot, v) => `<div class="${v ? "pend" : "ok"}"><span>${rot}</span><b>${brl(v)}</b></div>`;
-  return `<div class="falta-formas"><small>Falta prestar</small>${it("💵 Dinheiro", fd)}${it("⚡ PIX", fp)}</div>`;
+  return `<div class="falta-formas"><small>${rot}</small>${it("💵 Dinheiro", fd)}${it("⚡ PIX", fp)}</div>`;
 }
 const ordemPrest = (l) => [...l].sort((a, b) => new Date(a.quando) - new Date(b.quando));
 function renderMinha() {
@@ -1395,7 +1399,7 @@ function renderMinha() {
   $("#mc-nome").textContent = nomeCurto(nome);
   $("#mc-vendido").textContent = brl(vendido); $("#mc-prestado").textContent = brl(prest); $("#mc-falta").textContent = brl(Math.max(0, falta));
   $("#mc-barra").style.width = (vendido ? Math.min(100, (prest / vendido) * 100) : 0) + "%";
-  $("#mc-formas").innerHTML = falta > 0 ? faltaFormas(minhas, ps) : "";
+  $("#mc-formas").innerHTML = falta > 0 ? ((f) => faltaFormasHtml(f.fd, f.fp))(faltaFormas(minhas, ps)) : "";
   $("#mc-nota").innerHTML = `${minhas.length} mesa${minhas.length === 1 ? "" : "s"} vendida${minhas.length === 1 ? "" : "s"}<br>` +
     (vendido === 0 ? "Você ainda não tem vendas." : falta <= 0 ? "✅ Contas acertadas com " + esc(nomeCurto(TESOUREIRO)) + "."
       : `Entregue <b>${brl(falta)}</b> a ${esc(nomeCurto(TESOUREIRO))}. Ele registra cada entrega e ela aparece aqui.`);
@@ -1411,7 +1415,8 @@ function contasPorVendedor() {
     const din = minhas.filter((v) => v.pagamento === "Dinheiro").reduce((s, v) => s + (+v.valor || 0), 0);
     const pix = minhas.filter((v) => v.pagamento === "PIX").reduce((s, v) => s + (+v.valor || 0), 0);
     const rec = prestacoes.filter((p) => p.vendedor === nome).reduce((s, p) => s + (+p.valor || 0), 0);
-    return { nome, mesas: minhas.length, din, pix, vendido: din + pix, rec, pend: Math.round((din + pix - rec) * 100) / 100 };
+    const { fd, fp } = faltaFormas(minhas, prestacoes.filter((p) => p.vendedor === nome));
+    return { nome, mesas: minhas.length, din, pix, vendido: din + pix, rec, fd, fp, pend: Math.round((din + pix - rec) * 100) / 100 };
   });
 }
 function renderContas() {
@@ -1426,6 +1431,8 @@ function renderContas() {
   $("[data-c-total]").textContent = brl(tot);
   $("[data-c-recebido]").textContent = brl(rec);
   $("[data-c-pendente]").textContent = brl(Math.max(0, tot - rec));
+  const fd = l.reduce((s, x) => s + x.fd, 0), fp = l.reduce((s, x) => s + x.fp, 0);
+  $("[data-c-formas]").innerHTML = fd + fp > 0 ? faltaFormasHtml(fd, fp, "Falta receber de todos") : "";
   $("[data-c-barra]").style.width = (tot ? Math.min(100, (rec / tot) * 100) : 0) + "%";
   const proprias = vendas.filter((v) => v.vendedor === TESOUREIRO);
   $("[data-c-proprio]").textContent = proprias.length
@@ -1438,7 +1445,7 @@ function renderContas() {
       <div class="cv-top"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(x.nome))}</span><b>${esc(nomeCurto(x.nome))}</b></div>
       <div class="cv-num"><div>Vendeu<b>${brl(x.vendido)}</b></div><div class="ok">Entregou<b>${brl(x.rec)}</b></div><div class="pend">Falta<b>${brl(Math.max(0, x.pend))}</b></div></div>
       <div class="cv-split">${x.mesas} mesa${x.mesas === 1 ? "" : "s"}${x.pend < 0 ? ` · ⚠️ recebido ${brl(-x.pend)} a mais (venda cancelada?)` : ""}</div>
-      ${x.pend > 0 ? faltaFormas(vendas.filter((v) => v.vendedor === x.nome), prestacoes.filter((p) => p.vendedor === x.nome)) : ""}
+      ${x.pend > 0 ? faltaFormasHtml(x.fd, x.fp, "Falta receber") : ""}
       ${((ps) => ps.length ? `<details data-cv="${esc(x.nome)}"${abertos.has(x.nome) ? " open" : ""}><summary>Ver ${ps.length} prestaç${ps.length === 1 ? "ão" : "ões"} (data e horário)</summary>${ps.map((p, k) => `<div class="mini"><span>${k + 1}ª · ${quando(p.quando)} · ${esc(p.forma)}</span><b>${brl(p.valor)}</b></div>`).join("")}</details>` : "")(ordemPrest(prestacoes.filter((p) => p.vendedor === x.nome)))}
       ${x.pend > 0 ? `<button type="button" class="btn btn-receber" data-receber="${esc(x.nome)}">Registrar recebimento</button>`
         : x.vendido > 0 ? `<div class="selo-ok">✓ Contas acertadas</div>` : ""}
