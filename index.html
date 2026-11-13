@@ -227,6 +227,14 @@ details.mais[open] summary{margin-bottom:8px}
 .mais .filtros-sel{display:flex;gap:8px;flex-wrap:wrap}
 .btn-chegada{background:var(--green-2);color:#fff;flex:1;min-height:46px;font-size:16px}
 .ok-chegou{font-weight:800;color:var(--green-2);flex:1}
+.formas{width:100%;border-collapse:collapse;margin:12px 0 4px;font-size:14px;font-variant-numeric:tabular-nums}
+.formas th,.formas td{padding:7px 4px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+.formas th:first-child{text-align:left}
+.formas thead th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.formas tbody th{font-weight:800;color:var(--ink)}
+.formas tfoot th,.formas tfoot td{border-bottom:0;font-weight:800;font-size:15px}
+.formas .ok{color:var(--green-2)}.formas .pend{color:var(--pink)}
+.formas .amais{color:#B26B00}.formas .amais small{display:block;font-size:11px;font-weight:700}
 .salao{grid-column:1/-1;display:grid;gap:8px;background:#F3F8F9;border-radius:12px;padding:10px}
 .sal-qtd{display:flex;flex-wrap:wrap;gap:6px}
 .sal-qtd .qtd{flex:1 0 44px;min-height:48px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--green);font:800 20px "Nunito Sans",system-ui,sans-serif;cursor:pointer}
@@ -618,6 +626,7 @@ body.modal-aberto{overflow:hidden}
           <div><span>Falta prestar</span><b id="mc-falta" class="pend">R$ 0,00</b></div>
         </div>
         <div class="barra"><i id="mc-barra"></i></div>
+        <div id="mc-formas"></div>
         <div class="nota" id="mc-nota"></div>
       </div>
       <div class="card">
@@ -819,8 +828,8 @@ body.modal-aberto{overflow:hidden}
 
 <script src="qrcode.js?v=1.4.4"></script>
 <script type="module">
-import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261112-1500";
-import { criarStore } from "./store.js?v=20261112-1500";
+import { TOTAL_MESAS, VENDEDORES, SERIES, TURMAS, PAGAMENTOS, VALOR_MESA, DATA_FESTA, TESOUREIRO } from "./config.js?v=20261113-1420";
+import { criarStore } from "./store.js?v=20261113-1420";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1366,6 +1375,16 @@ $("#lista-vend-contas").addEventListener("click", (e) => {
   $$("#lista-vend-contas .nome-btn").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
   $("#erro-contas").textContent = ""; $("#pin-contas").focus();
 });
+// Dinheiro x PIX: vendido, já prestado e o que falta em cada forma
+function tabelaFormas(din, pix, ps) {
+  const pf = (f) => ps.filter((p) => p.forma === f).reduce((s, p) => s + (+p.valor || 0), 0);
+  const pd = pf("Dinheiro"), pp = pf("PIX"), outros = ps.reduce((s, p) => s + (+p.valor || 0), 0) - pd - pp;
+  const falta = (v) => { v = Math.round(v * 100) / 100; return v < 0 ? `<b class="amais">+${brl(-v)}<small>a mais</small></b>` : `<b class="${v ? "pend" : "ok"}">${brl(v)}</b>`; };
+  const lin = (rot, v, p) => `<tr><th>${rot}</th><td>${brl(v)}</td><td class="ok">${brl(p)}</td><td>${falta(v - p)}</td></tr>`;
+  return `<table class="formas"><thead><tr><th></th><th>Vendido</th><th>Prestado</th><th>Falta</th></tr></thead><tbody>
+    ${lin("💵 Dinheiro", din, pd)}${lin("⚡ PIX", pix, pp)}${outros ? lin("Outros", 0, outros) : ""}
+    </tbody><tfoot>${lin("Total", din + pix, pd + pp + outros)}</tfoot></table>`;
+}
 const ordemPrest = (l) => [...l].sort((a, b) => new Date(a.quando) - new Date(b.quando));
 function renderMinha() {
   const nome = sessao.nome, minhas = vendas.filter((v) => v.vendedor === nome);
@@ -1376,7 +1395,8 @@ function renderMinha() {
   $("#mc-nome").textContent = nomeCurto(nome);
   $("#mc-vendido").textContent = brl(vendido); $("#mc-prestado").textContent = brl(prest); $("#mc-falta").textContent = brl(Math.max(0, falta));
   $("#mc-barra").style.width = (vendido ? Math.min(100, (prest / vendido) * 100) : 0) + "%";
-  $("#mc-nota").innerHTML = `${minhas.length} mesa${minhas.length === 1 ? "" : "s"} vendida${minhas.length === 1 ? "" : "s"} · 💵 ${brl(din)} · ⚡ ${brl(pix)}<br>` +
+  $("#mc-formas").innerHTML = vendido || prest ? tabelaFormas(din, pix, ps) : "";
+  $("#mc-nota").innerHTML = `${minhas.length} mesa${minhas.length === 1 ? "" : "s"} vendida${minhas.length === 1 ? "" : "s"}<br>` +
     (vendido === 0 ? "Você ainda não tem vendas." : falta <= 0 ? "✅ Contas acertadas com " + esc(nomeCurto(TESOUREIRO)) + "."
       : `Entregue <b>${brl(falta)}</b> a ${esc(nomeCurto(TESOUREIRO))}. Ele registra cada entrega e ela aparece aqui.`);
   $("#mc-hist").innerHTML = ps.length ? ps.map((p, i) => `<div class="hist">
@@ -1417,7 +1437,8 @@ function renderContas() {
     return `<div class="cv${x.vendido > 0 && x.pend <= 0 ? " quitado" : ""}">
       <div class="cv-top"><span class="av" style="background:${CORES[i % CORES.length]}">${esc(iniciais(x.nome))}</span><b>${esc(nomeCurto(x.nome))}</b></div>
       <div class="cv-num"><div>Vendeu<b>${brl(x.vendido)}</b></div><div class="ok">Entregou<b>${brl(x.rec)}</b></div><div class="pend">Falta<b>${brl(Math.max(0, x.pend))}</b></div></div>
-      <div class="cv-split">${x.mesas} mesa${x.mesas === 1 ? "" : "s"} · 💵 ${brl(x.din)} · ⚡ ${brl(x.pix)}${x.pend < 0 ? ` · ⚠️ recebido ${brl(-x.pend)} a mais (venda cancelada?)` : ""}</div>
+      <div class="cv-split">${x.mesas} mesa${x.mesas === 1 ? "" : "s"}${x.pend < 0 ? ` · ⚠️ recebido ${brl(-x.pend)} a mais (venda cancelada?)` : ""}</div>
+      ${x.vendido || x.rec ? tabelaFormas(x.din, x.pix, prestacoes.filter((p) => p.vendedor === x.nome)) : ""}
       ${((ps) => ps.length ? `<details data-cv="${esc(x.nome)}"${abertos.has(x.nome) ? " open" : ""}><summary>Ver ${ps.length} prestaç${ps.length === 1 ? "ão" : "ões"} (data e horário)</summary>${ps.map((p, k) => `<div class="mini"><span>${k + 1}ª · ${quando(p.quando)} · ${esc(p.forma)}</span><b>${brl(p.valor)}</b></div>`).join("")}</details>` : "")(ordemPrest(prestacoes.filter((p) => p.vendedor === x.nome)))}
       ${x.pend > 0 ? `<button type="button" class="btn btn-receber" data-receber="${esc(x.nome)}">Registrar recebimento</button>`
         : x.vendido > 0 ? `<div class="selo-ok">✓ Contas acertadas</div>` : ""}
